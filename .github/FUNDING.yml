@@ -10,4 +10,5 @@ lfx_crowdfunding:
 polar: 
 buy_me_a_coffee: 
 thanks_dev: 
-custom: []
+custom:
+  - https://www.paypal.com/ncp/payment/MFC3NA9ACVKPC
