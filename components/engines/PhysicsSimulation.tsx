@@ -37,7 +37,7 @@ export const PhysicsSimulation = ({ configStr }: { configStr: string }) => {
         bodies.push(Bodies.rectangle(width + 25, height/2, 50, height, wallOpts), Bodies.rectangle(-25, height/2, 50, height, wallOpts));
 
         if (config.objects) {
-            config.objects.forEach((obj: any) => {
+            (config.objects || []).forEach((obj: any) => {
                 const opts = { isStatic: obj.isStatic, restitution: obj.bounciness||0.5, friction: obj.friction||0.1, frictionAir: obj.frictionAir||0.01, render: { fillStyle: obj.color||styles.accentColor } };
                 if (obj.type === 'circle') bodies.push(Bodies.circle(obj.x, obj.y, obj.r, opts));
                 else if (obj.type === 'rectangle') bodies.push(Bodies.rectangle(obj.x, obj.y, obj.w, obj.h, opts));
@@ -52,7 +52,7 @@ export const PhysicsSimulation = ({ configStr }: { configStr: string }) => {
         
         const vectorHeads: Record<string, any> = {};
         if (config.vectorMode && config.vectors) {
-             config.vectors.forEach((v: any) => {
+             (config.vectors || []).forEach((v: any) => {
                   let vx = v.initial ? v.initial.x : 50, vy = v.initial ? v.initial.y : -50;
                   if (v.magnitude !== undefined && v.angle !== undefined) {
                       const rad = (v.angle * Math.PI) / 180; vx = v.magnitude * Math.cos(rad); vy = -v.magnitude * Math.sin(rad); 
@@ -78,7 +78,7 @@ export const PhysicsSimulation = ({ configStr }: { configStr: string }) => {
                 drawArrow(ctx, origin.x, height, origin.x, 0, styles.mutedColor, 'y', false, 2);
             }
             if (config.vectorMode && config.vectors) {
-                config.vectors.forEach((v: any) => {
+                (config.vectors || []).forEach((v: any) => {
                     const head = vectorHeads[v.id]; if(!head) return;
                     const origin = v.origin || {x: width/2, y: height/2};
                     drawArrow(ctx, origin.x, origin.y, head.position.x, head.position.y, v.color||styles.accentColor, v.label);
@@ -88,7 +88,7 @@ export const PhysicsSimulation = ({ configStr }: { configStr: string }) => {
                     }
                 });
                 if (config.operations) {
-                     config.operations.forEach((op: any) => {
+                     (config.operations || []).forEach((op: any) => {
                          if (op.type === 'scale' && vectorHeads[op.source]) {
                              const src = vectorHeads[op.source];
                              const origin = config.vectors.find((v:any) => v.id===op.source)?.origin || {x: width/2, y: height/2};

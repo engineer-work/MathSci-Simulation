@@ -48,7 +48,7 @@ export const InteractivePlot = ({ configStr, onUpdate }: { configStr: string, on
       let hasChanges = false;
       const next = { ...prev };
       
-      config.params.forEach((p: any) => {
+      (config?.params || []).forEach((p: any) => {
         if (animatingParams[p.name] && p.type === 'slider') {
           const range = p.max - p.min;
           const speed = p.animationSpeed || 0.2; // 20% of range per second
@@ -91,7 +91,7 @@ export const InteractivePlot = ({ configStr, onUpdate }: { configStr: string, on
   const stopParamAnimation = (name: string) => {
     setAnimatingParams(prev => ({ ...prev, [name]: false }));
     // Optionally reset to min or initial value
-    const pConfig = config.params.find((p: any) => p.name === name);
+    const pConfig = (config?.params || []).find((p: any) => p.name === name);
     if (pConfig) {
       setParams(prev => ({ ...prev, [name]: pConfig.value !== undefined ? pConfig.value : pConfig.min }));
     }
@@ -330,7 +330,7 @@ export const InteractivePlot = ({ configStr, onUpdate }: { configStr: string, on
                    onClick={() => {
                      if (p.action === 'reset') {
                        const initial: any = {};
-                       config.params.forEach((param: any) => { initial[param.name] = param.value || 0; });
+                       (config?.params || []).forEach((param: any) => { initial[param.name] = param.value || 0; });
                        setParams(initial);
                      }
                    }}

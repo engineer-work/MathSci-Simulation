@@ -40,7 +40,7 @@ interface SketchAnimation {
 interface SketchElement {
   id: string;
   type: 'line' | 'rect' | 'circle' | 'text';
-  tool: 'pen' | 'pencil' | 'eraser' | 'brush';
+  tool: 'pen' | 'pencil' | 'eraser' | 'brush' | 'rect' | 'circle' | 'text' | 'select';
   points?: number[];
   x?: number;
   y?: number;
@@ -56,15 +56,39 @@ interface SketchElement {
   scaleX?: number;
   scaleY?: number;
   animation?: SketchAnimation;
+  physics?: {
+    isStatic?: boolean;
+    restitution?: number;
+    friction?: number;
+    density?: number;
+    velocity?: { x: number; y: number };
+    angularVelocity?: number;
+    enabled?: boolean;
+  };
+}
+
+interface SketchConstraint {
+  id: string;
+  bodyAId: string;
+  bodyBId?: string; // If null, pinned to world
+  pointA?: { x: number; y: number };
+  pointB?: { x: number; y: number };
+  length?: number;
+  stiffness?: number;
+  damping?: number;
+  label?: string;
 }
 
 interface SketchConfig {
   internal_block_id: string;
   elements: SketchElement[];
+  constraints?: SketchConstraint[];
   width?: number;
   height?: number;
   backgroundColor?: string;
   blobId?: string; // For saving a high-res snapshot
+  physicsEnabled?: boolean;
+  gravity?: { x: number; y: number };
 }
 
 export const SketchBoardEngine = ({ 
@@ -104,6 +128,9 @@ export const SketchBoardEngine = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const animationRef = useRef<number | null>(null);
+  const engineRef = useRef<any>(null);
+  const bodiesRef = useRef<{ [key: string]: any }>({});
+  const physicsRequestRef = useRef<number | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
 
   useEffect(() => {
@@ -141,6 +168,124 @@ export const SketchBoardEngine = ({
     };
   }, [isAnimating]);
 
+  // Physics Engine Setup
+  useEffect(() => {
+    if (!config?.physicsEnabled || readOnly) {
+      if (engineRef.current) {
+        const { Engine, World } = (window as any).Matter;
+        World.clear(engineRef.current.world, false);
+        Engine.clear(engineRef.current);
+        engineRef.current = null;
+      }
+      return;
+    }
+
+    const { Engine, World, Bodies, Composite, Body, Constraint } = (window as any).Matter;
+    if (!Engine) return;
+
+    if (!engineRef.current) {
+      engineRef.current = Engine.create();
+    }
+
+    const engine = engineRef.current;
+    engine.world.gravity.x = config.gravity?.x ?? 0;
+    engine.world.gravity.y = config.gravity?.y ?? 1;
+
+    World.clear(engine.world, false);
+    bodiesRef.current = {};
+
+    const newBodies: any[] = [];
+    const bodiesMap = new Map<string, any>();
+
+    elements.forEach(el => {
+      if (!el.physics?.enabled && !el.physics?.isStatic) return;
+
+      let body;
+      const options = {
+        isStatic: el.physics?.isStatic || false,
+        restitution: el.physics?.restitution ?? 0,
+        friction: el.physics?.friction ?? 0.1,
+        density: el.physics?.density ?? 0.001,
+        label: el.id
+      };
+
+      if (el.type === 'rect') {
+        body = Bodies.rectangle((el.x || 0) + (el.width || 0) / 2, (el.y || 0) + (el.height || 0) / 2, el.width || 10, el.height || 10, options);
+      } else if (el.type === 'circle') {
+        body = Bodies.circle(el.x || 0, el.y || 0, el.radius || 10, options);
+      }
+
+      if (body) {
+        if (el.physics?.velocity) {
+          Body.setVelocity(body, el.physics.velocity);
+        }
+        if (el.physics?.angularVelocity) {
+          Body.setAngularVelocity(body, el.physics.angularVelocity);
+        }
+        bodiesRef.current[el.id] = body;
+        bodiesMap.set(el.id, body);
+        newBodies.push(body);
+      }
+    });
+
+    Composite.add(engine.world, newBodies);
+
+    // Add constraints
+    if (config.constraints) {
+      (config.constraints || []).forEach(c => {
+        const bodyA = bodiesMap.get(c.bodyAId);
+        const bodyB = c.bodyBId ? bodiesMap.get(c.bodyBId) : null;
+
+        if (bodyA || bodyB) {
+          const constraint = Constraint.create({
+            bodyA: bodyA,
+            bodyB: bodyB,
+            pointA: c.pointA,
+            pointB: c.pointB,
+            length: c.length,
+            stiffness: c.stiffness ?? 0.1,
+            damping: c.damping ?? 0.1
+          });
+          Composite.add(engine.world, constraint);
+        }
+      });
+    }
+
+    const step = () => {
+      Engine.update(engine, 1000 / 60);
+      
+      setElements(prev => prev.map(el => {
+        const body = bodiesRef.current[el.id];
+        if (body && !body.isStatic) {
+          if (el.type === 'rect') {
+            return {
+              ...el,
+              x: body.position.x - (el.width || 0) / 2,
+              y: body.position.y - (el.height || 0) / 2,
+              rotation: (body.angle * 180) / Math.PI
+            };
+          } else if (el.type === 'circle') {
+            return {
+              ...el,
+              x: body.position.x,
+              y: body.position.y,
+              rotation: (body.angle * 180) / Math.PI
+            };
+          }
+        }
+        return el;
+      }));
+
+      physicsRequestRef.current = requestAnimationFrame(step);
+    };
+
+    physicsRequestRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (physicsRequestRef.current) cancelAnimationFrame(physicsRequestRef.current);
+    };
+  }, [config?.physicsEnabled, config?.gravity, readOnly, elements.length]);
+
   useEffect(() => {
     try {
       const parsed = JSON.parse(configStr);
@@ -155,7 +300,7 @@ export const SketchBoardEngine = ({
     if (!config) return;
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
-    onUpdate(JSON.stringify(newConfig));
+    onUpdate(JSON.stringify(newConfig, null, 2));
   }, [config, onUpdate]);
 
   const handleMouseDown = (e: any) => {
@@ -367,6 +512,93 @@ export const SketchBoardEngine = ({
     return baseValue;
   };
 
+  const applyPreset = (presetName: string) => {
+    let newElements: SketchElement[] = [];
+    let newConstraints: SketchConstraint[] = [];
+    let newGravity = { x: 0, y: 1 };
+
+    if (presetName === 'pendulum') {
+      const anchorId = uuidv4();
+      const ballId = uuidv4();
+      newElements = [
+        {
+          id: anchorId,
+          type: 'circle',
+          tool: 'rect',
+          x: 400,
+          y: 100,
+          radius: 5,
+          stroke: '#ffffff',
+          strokeWidth: 2,
+          fill: '#ffffff',
+          physics: { enabled: true, isStatic: true }
+        },
+        {
+          id: ballId,
+          type: 'circle',
+          tool: 'circle',
+          x: 600,
+          y: 100,
+          radius: 20,
+          stroke: '#3b82f6',
+          strokeWidth: 2,
+          fill: '#3b82f6',
+          physics: { enabled: true, restitution: 0.9 }
+        }
+      ];
+      newConstraints = [
+        {
+          id: uuidv4(),
+          bodyAId: anchorId,
+          bodyBId: ballId,
+          length: 200,
+          stiffness: 0.9
+        }
+      ];
+    } else if (presetName === 'newtons-cradle') {
+      for (let i = 0; i < 5; i++) {
+        const anchorId = uuidv4();
+        const ballId = uuidv4();
+        newElements.push(
+          {
+            id: anchorId,
+            type: 'circle',
+            tool: 'rect',
+            x: 300 + i * 42,
+            y: 100,
+            radius: 5,
+            stroke: '#ffffff',
+            strokeWidth: 2,
+            fill: '#ffffff',
+            physics: { enabled: true, isStatic: true }
+          },
+          {
+            id: ballId,
+            type: 'circle',
+            tool: 'circle',
+            x: 300 + i * 42 + (i === 0 ? -100 : 0),
+            y: 100 + (i === 0 ? -50 : 0),
+            radius: 20,
+            stroke: '#3b82f6',
+            strokeWidth: 2,
+            fill: '#3b82f6',
+            physics: { enabled: true, restitution: 1, friction: 0 }
+          }
+        );
+        newConstraints.push({
+          id: uuidv4(),
+          bodyAId: anchorId,
+          bodyBId: ballId,
+          length: 200,
+          stiffness: 1
+        });
+      }
+    }
+
+    setElements(newElements);
+    updateConfig({ elements: newElements, constraints: newConstraints, gravity: newGravity, physicsEnabled: true });
+  };
+
   if (!config) return null;
 
   return (
@@ -528,6 +760,36 @@ export const SketchBoardEngine = ({
           className="cursor-crosshair"
         >
           <Layer>
+            {/* Render Constraints */}
+            {config.constraints?.map(c => {
+              const elA = elements.find(e => e.id === c.bodyAId);
+              const elB = c.bodyBId ? elements.find(e => e.id === c.bodyBId) : null;
+              
+              if (!elA) return null;
+              
+              const startX = elA.type === 'circle' ? elA.x! : elA.x! + (elA.width || 0) / 2;
+              const startY = elA.type === 'circle' ? elA.y! : elA.y! + (elA.height || 0) / 2;
+              
+              let endX = c.pointB?.x ?? 0;
+              let endY = c.pointB?.y ?? 0;
+              
+              if (elB) {
+                endX = elB.type === 'circle' ? elB.x! : elB.x! + (elB.width || 0) / 2;
+                endY = elB.type === 'circle' ? elB.y! : elB.y! + (elB.height || 0) / 2;
+              }
+              
+              return (
+                <Line
+                  key={c.id}
+                  points={[startX, startY, endX, endY]}
+                  stroke="#ffffff"
+                  strokeWidth={1}
+                  dash={[5, 5]}
+                  opacity={0.3}
+                />
+              );
+            })}
+
             {elements.map((el, i) => {
               const x = getAnimatedValue(el, 'x', el.x || 0);
               const y = getAnimatedValue(el, 'y', el.y || 0);
@@ -687,6 +949,24 @@ export const SketchBoardEngine = ({
             </div>
 
             <div className="space-y-4">
+              <div className="pt-4 border-t border-white/5">
+                <label className="text-[0.6rem] text-white/40 uppercase tracking-widest block mb-2">Physics Presets</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => applyPreset('pendulum')}
+                    className="py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[0.6rem] font-bold text-white uppercase tracking-widest transition-all"
+                  >
+                    Pendulum
+                  </button>
+                  <button 
+                    onClick={() => applyPreset('newtons-cradle')}
+                    className="py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[0.6rem] font-bold text-white uppercase tracking-widest transition-all"
+                  >
+                    Newton's Cradle
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="text-[0.6rem] text-white/40 uppercase tracking-widest block mb-2">Background</label>
                 <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg">
@@ -778,9 +1058,67 @@ export const SketchBoardEngine = ({
                           Delete Element
                         </button>
 
+                        <div className="pt-4 border-t border-white/5 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[0.6rem] text-white/60 uppercase tracking-widest">Physics</span>
+                            <input 
+                              type="checkbox" 
+                              checked={el.physics?.enabled || false}
+                              onChange={(e) => {
+                                const newElements = elements.map(item => 
+                                  item.id === selectedId 
+                                    ? { ...item, physics: { ...(item.physics || { restitution: 0.5, friction: 0.1, enabled: true }), enabled: e.target.checked } }
+                                    : item
+                                );
+                                setElements(newElements);
+                                updateConfig({ elements: newElements });
+                              }}
+                              className="w-4 h-4 accent-blue-500"
+                            />
+                          </div>
+                          {el.physics?.enabled && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[0.6rem] text-white/40">Static</span>
+                                <input 
+                                  type="checkbox" 
+                                  checked={el.physics?.isStatic || false}
+                                  onChange={(e) => {
+                                    const newElements = elements.map(item => 
+                                      item.id === selectedId 
+                                        ? { ...item, physics: { ...item.physics!, isStatic: e.target.checked } }
+                                        : item
+                                    );
+                                    setElements(newElements);
+                                    updateConfig({ elements: newElements });
+                                  }}
+                                  className="w-4 h-4 accent-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <span className="text-[0.6rem] text-white/40 block mb-1">Restitution: {el.physics?.restitution ?? 0.5}</span>
+                                <input 
+                                  type="range" min="0" max="1" step="0.1"
+                                  value={el.physics?.restitution ?? 0.5}
+                                  onChange={(e) => {
+                                    const newElements = elements.map(item => 
+                                      item.id === selectedId 
+                                        ? { ...item, physics: { ...item.physics!, restitution: parseFloat(e.target.value) } }
+                                        : item
+                                    );
+                                    setElements(newElements);
+                                    updateConfig({ elements: newElements });
+                                  }}
+                                  className="w-full accent-blue-500"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
                         <button 
                           onClick={() => setSelectedId(null)}
-                          className="w-full py-1 bg-white/5 hover:bg-white/10 rounded-lg text-[0.6rem] text-white/60 uppercase tracking-widest"
+                          className="w-full py-1 bg-white/5 hover:bg-white/10 rounded-lg text-[0.6rem] text-white/60 uppercase tracking-widest mt-2"
                         >
                           Deselect Element
                         </button>
@@ -789,8 +1127,32 @@ export const SketchBoardEngine = ({
                   })()}
                 </div>
               ) : (
-                <div className="pt-4 border-t border-white/5 text-center py-4">
-                  <p className="text-[0.6rem] text-white/30 uppercase tracking-widest">Select an element to animate</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[0.6rem] text-white/60 uppercase tracking-widest">Global Physics</span>
+                    <input 
+                      type="checkbox" 
+                      checked={config?.physicsEnabled || false}
+                      onChange={(e) => updateConfig({ physicsEnabled: e.target.checked })}
+                      className="w-4 h-4 accent-blue-500"
+                    />
+                  </div>
+                  {config?.physicsEnabled && (
+                    <div className="space-y-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                      <div>
+                        <span className="text-[0.6rem] text-white/40 block mb-1">Gravity Y: {config?.gravity?.y ?? 1}</span>
+                        <input 
+                          type="range" min="-2" max="2" step="0.1"
+                          value={config?.gravity?.y ?? 1}
+                          onChange={(e) => updateConfig({ gravity: { ...(config?.gravity || { x: 0 }), y: parseFloat(e.target.value) } })}
+                          className="w-full accent-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="pt-4 border-t border-white/5 text-center py-4">
+                    <p className="text-[0.6rem] text-white/30 uppercase tracking-widest">Select an element to animate or enable physics</p>
+                  </div>
                 </div>
               )}
 

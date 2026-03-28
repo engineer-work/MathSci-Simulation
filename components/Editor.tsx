@@ -6,6 +6,8 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from 'rehype-highlight';
+import { db } from '../utils/db';
+import { v4 as uuidv4 } from 'uuid';
 import { MermaidDiagram } from './engines/MermaidDiagram';
 import { SmilesDiagram } from './engines/SmilesDiagram';
 import { InteractivePlot } from './engines/InteractivePlot';
@@ -13,10 +15,11 @@ import { ModelViewerEngine } from './engines/ModelViewerEngine';
 import { SketchBoardEngine } from './engines/SketchBoardEngine';
 import { PhysicsSimulation } from './engines/PhysicsSimulation';
 import { ImageAnnotationEngine } from './engines/ImageAnnotationEngine';
+import { MediaBlock } from './engines/MediaBlock';
+import { InvestigationBoard } from './engines/InvestigationBoard';
 import { CodeEditorEngine } from './engines/CodeEditorEngine';
 import { EditorToolbar } from './editor/EditorToolbar';
 import { FileNode } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 interface EditorProps {
   content: string;
@@ -30,6 +33,90 @@ interface EditorProps {
 
 const safeJsonParse = (str: string) => {
   try { return JSON.parse(str); } catch (e) { return null; }
+};
+
+const BlobImage = ({ src, alt, ...props }: any) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+
+    const loadBlob = async () => {
+      const blobId = src.replace('blob-id:', '');
+      const blobData = await db.blobs.get(blobId);
+      if (blobData && active) {
+        objectUrl = URL.createObjectURL(blobData.data);
+        setUrl(objectUrl);
+      }
+    };
+    loadBlob();
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [src]);
+
+  if (!url) return <div className="w-full h-48 bg-white/5 animate-pulse rounded-lg my-4 flex items-center justify-center text-[0.6rem] text-white/20 uppercase tracking-widest">Loading Image...</div>;
+
+  return <img src={url} alt={alt} {...props} referrerPolicy="no-referrer" className="max-w-full h-auto rounded-lg my-4 shadow-md" />;
+};
+
+const BlobVideo = ({ src, ...props }: any) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+
+    const loadBlob = async () => {
+      const blobId = src.replace('blob-id:', '');
+      const blobData = await db.blobs.get(blobId);
+      if (blobData && active) {
+        objectUrl = URL.createObjectURL(blobData.data);
+        setUrl(objectUrl);
+      }
+    };
+    loadBlob();
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [src]);
+
+  if (!url) return <div className="w-full aspect-video bg-white/5 animate-pulse rounded-lg my-4 flex items-center justify-center text-[0.6rem] text-white/20 uppercase tracking-widest">Loading Video...</div>;
+
+  return <video src={url} {...props} className="max-w-full h-auto rounded-lg my-4 shadow-md" />;
+};
+
+const BlobAudio = ({ src, ...props }: any) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+
+    const loadBlob = async () => {
+      const blobId = src.replace('blob-id:', '');
+      const blobData = await db.blobs.get(blobId);
+      if (blobData && active) {
+        objectUrl = URL.createObjectURL(blobData.data);
+        setUrl(objectUrl);
+      }
+    };
+    loadBlob();
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [src]);
+
+  if (!url) return <div className="w-full h-12 bg-white/5 animate-pulse rounded-lg my-4 flex items-center justify-center text-[0.6rem] text-white/20 uppercase tracking-widest">Loading Audio...</div>;
+
+  return <audio src={url} {...props} className="w-full my-4" />;
 };
 
 export const Editor: React.FC<EditorProps> = ({ 
@@ -47,11 +134,7 @@ export const Editor: React.FC<EditorProps> = ({
   const [isCornellMode, setIsCornellMode] = useState(isCornell);
   const lastSavedContent = useRef(content);
   const localContentRef = useRef(content);
-
-  // Sync ref with state
-  useEffect(() => {
-    localContentRef.current = localContent;
-  }, [localContent]);
+  localContentRef.current = localContent; // Update on every render
   
   // Update local state when file changes
   useEffect(() => {
@@ -78,6 +161,7 @@ export const Editor: React.FC<EditorProps> = ({
     if (block && start !== 0 && value[start - 1] !== '\n') insertion = '\n' + insertion;
     const newVal = value.substring(0, start) + insertion + value.substring(end);
     setLocalContent(newVal);
+    lastSavedContent.current = newVal;
     onChange(newVal);
   };
 
@@ -161,7 +245,43 @@ export const Editor: React.FC<EditorProps> = ({
     }
   }, [onChange]);
 
+  const handleMediaUpdate = useCallback((targetId: string, newConfigStr: string) => {
+    const updated = localContentRef.current.replace(/```media\s*([\s\S]*?)\s*```/g, (match, inner) => {
+      const parsed = safeJsonParse(inner.trim());
+      if (parsed?.internal_block_id === targetId) {
+        return `\`\`\`media\n${newConfigStr}\n\`\`\``;
+      }
+      return match;
+    });
+    
+    if (updated !== localContentRef.current) {
+      setLocalContent(updated);
+      lastSavedContent.current = updated;
+      onChange(updated);
+    }
+  }, [onChange]);
+
+  const handleBoardUpdate = useCallback((targetId: string, newConfigStr: string) => {
+    const updated = localContentRef.current.replace(/```board\s*([\s\S]*?)\s*```/g, (match, inner) => {
+      const parsed = safeJsonParse(inner.trim());
+      if (parsed?.internal_block_id === targetId) {
+        return `\`\`\`board\n${newConfigStr}\n\`\`\``;
+      }
+      return match;
+    });
+    
+    if (updated !== localContentRef.current) {
+      setLocalContent(updated);
+      lastSavedContent.current = updated;
+      onChange(updated);
+    }
+  }, [onChange]);
+
   const markdownComponents = useMemo(() => ({
+    h1: ({ children }: any) => <h1 className="text-4xl font-extrabold text-white mt-10 mb-6 border-b-2 border-white/10 pb-3 tracking-tight">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-3xl font-bold text-white mt-8 mb-4 border-b border-white/5 pb-2 tracking-tight">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-2xl font-semibold text-white mt-6 mb-3 tracking-tight">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-xl font-semibold text-white mt-4 mb-2 tracking-tight">{children}</h4>,
     p: ({ children }: any) => {
       if (isCornellMode) {
         const childrenArray = React.Children.toArray(children);
@@ -174,7 +294,25 @@ export const Editor: React.FC<EditorProps> = ({
     },
     img: ({ src, alt, ...props }: any) => {
       if (!src) return null;
+      
+      // Handle blob-id:
+      if (src.startsWith('blob-id:')) {
+        return <BlobImage src={src} alt={alt} {...props} />;
+      }
+      
       return <img src={src} alt={alt} {...props} referrerPolicy="no-referrer" className="max-w-full h-auto rounded-lg my-4 shadow-md" />;
+    },
+    video: ({ src, ...props }: any) => {
+      if (src?.startsWith('blob-id:')) {
+        return <BlobVideo src={src} {...props} />;
+      }
+      return <video src={src} {...props} />;
+    },
+    audio: ({ src, ...props }: any) => {
+      if (src?.startsWith('blob-id:')) {
+        return <BlobAudio src={src} {...props} />;
+      }
+      return <audio src={src} {...props} />;
     },
     pre: ({ children }: any) => {
       // If the child is one of our custom engines, don't wrap in <pre>
@@ -243,6 +381,28 @@ export const Editor: React.FC<EditorProps> = ({
                 />
               );
             }
+            case 'media': {
+              const parsed = safeJsonParse(rawCodeContent.trim());
+              return (
+                <MediaBlock 
+                  key={parsed?.internal_block_id || rawCodeContent}
+                  configStr={rawCodeContent} 
+                  onUpdate={(newStr) => parsed?.internal_block_id && handleMediaUpdate(parsed.internal_block_id, newStr)}
+                  readOnly={readOnly}
+                />
+              );
+            }
+            case 'board': {
+              const parsed = safeJsonParse(rawCodeContent.trim());
+              return (
+                <InvestigationBoard 
+                  key={parsed?.internal_block_id || rawCodeContent}
+                  configStr={rawCodeContent} 
+                  onUpdate={(newStr) => parsed?.internal_block_id && handleBoardUpdate(parsed.internal_block_id, newStr)}
+                  readOnly={readOnly}
+                />
+              );
+            }
             case 'physics': return <PhysicsSimulation configStr={rawCodeContent} />;
           }
         }
@@ -280,8 +440,23 @@ export const Editor: React.FC<EditorProps> = ({
           readOnly={true} 
         />
       );
+    },
+    'investigation-board': (props: any) => {
+      const config = {
+        internal_block_id: props.id || uuidv4(),
+        items: [],
+        connections: [],
+        ...props
+      };
+      return (
+        <InvestigationBoard 
+          configStr={JSON.stringify(config)} 
+          onUpdate={() => {}} 
+          readOnly={true} 
+        />
+      );
     }
-  }), [handleIDEUpdate, handleAnnotateUpdate, handlePlotUpdate, handleModelUpdate, handleSketchUpdate, readOnly, isCornellMode]);
+  }), [handleIDEUpdate, handleAnnotateUpdate, handlePlotUpdate, handleModelUpdate, handleSketchUpdate, handleMediaUpdate, handleBoardUpdate, readOnly, isCornellMode]);
 
   const cornellData = useMemo(() => {
     if (!isCornellMode) return null;

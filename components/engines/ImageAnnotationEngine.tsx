@@ -1,6 +1,8 @@
 
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { X, Plus, Trash2, Info, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, Plus, Trash2, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, Upload } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '../../utils/db';
 
 interface Annotation {
   x: number; // percentage 0-100
@@ -89,15 +91,29 @@ export const ImageAnnotationEngine: React.FC<ImageAnnotationEngineProps> = ({ co
   }, [newAnnoPos]);
 
   useEffect(() => {
-    try {
-      const parsed = JSON.parse(configStr);
-      if (!parsed.src) throw new Error("Missing 'src' property");
-      if (!parsed.annotations) parsed.annotations = [];
-      setConfig(parsed);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid JSON configuration");
-    }
+    const loadConfig = async () => {
+      try {
+        const parsed = JSON.parse(configStr);
+        if (!parsed.src) throw new Error("Missing 'src' property");
+        if (!parsed.annotations) parsed.annotations = [];
+        
+        // Handle blob-id:
+        if (parsed.src.startsWith('blob-id:')) {
+          const blobId = parsed.src.replace('blob-id:', '');
+          const blobData = await db.blobs.get(blobId);
+          if (blobData) {
+            const objectUrl = URL.createObjectURL(blobData.data);
+            parsed.src = objectUrl;
+          }
+        }
+        
+        setConfig(parsed);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Invalid JSON configuration");
+      }
+    };
+    loadConfig();
   }, [configStr]);
 
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -177,6 +193,28 @@ export const ImageAnnotationEngine: React.FC<ImageAnnotationEngineProps> = ({ co
     onUpdate(JSON.stringify(newConfig, null, 2));
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !config || !onUpdate) return;
+
+    try {
+      const blobId = uuidv4();
+      await db.blobs.add({
+        id: blobId,
+        data: file,
+        type: file.type,
+        name: file.name,
+        createdAt: Date.now()
+      });
+
+      const newConfig = { ...config, src: `blob-id:${blobId}` };
+      onUpdate(JSON.stringify(newConfig, null, 2));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload image.');
+    }
+  };
+
   if (error) {
     return (
       <div className="p-6 border-2 border-dashed border-red-500/30 bg-red-500/5 text-red-400 rounded-xl my-6 flex flex-col items-center gap-3">
@@ -201,6 +239,30 @@ export const ImageAnnotationEngine: React.FC<ImageAnnotationEngineProps> = ({ co
         onClick={handleImageClick}
       >
         <div className="overflow-hidden rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+          {!readOnly && (
+            <div className="absolute top-4 left-4 z-20 flex gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e: any) => handleImageUpload(e);
+                  input.click();
+                }}
+                className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-md border border-white/10 shadow-2xl transition-all hover:scale-105"
+                title="Change Image"
+              >
+                <Upload size={16} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsFullscreen(!isFullscreen); }}
+                className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-md border border-white/10 shadow-2xl transition-all hover:scale-105"
+              >
+                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+            </div>
+          )}
           <div style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center', transition: 'transform 0.3s ease-out' }}>
             {config.src ? (
               <img 

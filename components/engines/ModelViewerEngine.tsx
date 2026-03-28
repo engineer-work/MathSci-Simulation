@@ -81,6 +81,8 @@ export const ModelViewerEngine = ({
     if (!config?.src) return;
 
     const resolve = async () => {
+      if (!config.src) return;
+
       if (config.src.startsWith('blob-id:')) {
         const id = config.src.replace('blob-id:', '');
         
@@ -99,15 +101,20 @@ export const ModelViewerEngine = ({
             setResolvedSrc(url);
             setPerfStats({ 
               size: blobData.data.size, 
-              saved: Math.round(blobData.data.size * 0.33) // Base64 overhead saved
+              saved: Math.round(blobData.data.size * 0.33)
             });
+          } else {
+            console.error("Model blob not found in DB:", id);
+            setResolvedSrc(null);
           }
         } catch (err) {
-          console.error("Failed to load blob from IndexedDB", err);
+          console.error("Failed to load model blob from IndexedDB", err);
+          setResolvedSrc(null);
         } finally {
           setIsLoading(false);
         }
       } else {
+        // It's already a URL or a blob: URL
         setResolvedSrc(config.src);
         setPerfStats(null);
       }
@@ -164,6 +171,11 @@ export const ModelViewerEngine = ({
     const handleError = (error: any) => {
       console.error("Model failed to load:", error);
       setIsLoading(false);
+      // If it failed to load, maybe the URL is invalid or expired
+      if (config?.src.startsWith('blob-id:')) {
+        const id = config.src.replace('blob-id:', '');
+        blobCache.delete(id); // Clear cache so it retries on next mount
+      }
     };
 
     viewer.addEventListener('load', handleLoad);

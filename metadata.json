@@ -1,5 +1,5 @@
 {
-  "name": "MathSci Editor",
-  "description": "A powerful Markdown editor for Math and Science with file system management, PDF export, and integrated simulation engines.",
+  "name": "AetherCAD",
+  "description": "Unified Electronic Design Automation (EDA) platform with schematic capture, SPICE simulation, HDL integration, and 3D visualization.",
   "requestFramePermissions": []
 }

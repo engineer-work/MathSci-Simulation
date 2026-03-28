@@ -8,10 +8,12 @@ import {
   Quote, Code, Link, Image, Table, Minus,
   Sigma, Workflow, Hexagon, Activity, Atom, 
   Terminal, Upload, FileImage, Globe, Copy, Check, X,
-  Layout, Cpu, MapPin, Pencil
+  Layout, Cpu, MapPin, Pencil, Video, Volume2, Sparkles, Pin
 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '../../utils/db';
 import { 
-  PLOT_TEMPLATE, PHYSICS_TEMPLATE, REACTION_TEMPLATE, getIdeTemplate, getAnnotateTemplate, getSketchTemplate 
+  PLOT_TEMPLATE, PHYSICS_TEMPLATE, REACTION_TEMPLATE, getIdeTemplate, getAnnotateTemplate, getSketchTemplate, getVideoTemplate, getAudioTemplate, getMediaTemplate, getBoardTemplate, HPC_ROADMAP_TEMPLATE, getAetherCadTemplate, AETHERCAD_TEXT_TEMPLATE 
 } from './templates';
 import { compressImageToTarget } from '../../utils/imageUtils';
 
@@ -37,24 +39,41 @@ export const EditorToolbar = ({
 
   if (readOnly) return null;
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'audio' = 'image', mode: 'normal' | 'annotate' = 'normal') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      const compressed = await compressImageToTarget(file, 10 * 1024);
-      if (!compressed) {
-        alert('Could not compress image. Try a different image.');
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
+      // Store in IndexedDB
+      const blobId = uuidv4();
+      await db.blobs.add({
+        id: blobId,
+        data: file,
+        type: file.type,
+        name: file.name,
+        createdAt: Date.now()
+      });
+
+      const blobSrc = `blob-id:${blobId}`;
+      let syntax = '';
+      
+      if (type === 'image') {
+        if (mode === 'annotate') {
+          syntax = getAnnotateTemplate(blobSrc);
+        } else {
+          syntax = `<img src="${blobSrc}" alt="${file.name}" />`;
+        }
+      } else if (type === 'video') {
+        syntax = getMediaTemplate('video', blobSrc);
+      } else if (type === 'audio') {
+        syntax = getMediaTemplate('audio', blobSrc);
       }
-      const { dataUrl, size } = compressed;
-      const syntax = `<img src="${dataUrl}" alt="${file.name}" />`;
+
       insertFormat(`\n${syntax}\n`, '', true);
-      setUploadStatus({ name: file.name, syntax, size });
+      setUploadStatus({ name: file.name, syntax, size: file.size });
     } catch (err) {
       console.error(err);
-      alert('Failed to upload image.');
+      alert(`Failed to upload ${type}.`);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -144,8 +163,37 @@ export const EditorToolbar = ({
                 <ToolbarButton icon={Globe} title="Image URL" action={() => insertFormat('![alt](', ')') } />
                 <ToolbarButton icon={MapPin} title="Annotated Image" action={() => insertFormat(getAnnotateTemplate(), '', true)} color="var(--accent-color)" />
                 <ToolbarButton icon={Pencil} title="Sketch Board" action={() => insertFormat(getSketchTemplate(), '', true)} color="var(--accent-color)" />
-                <ToolbarButton icon={Upload} title="Upload File" action={() => fileInputRef.current?.click()} color="var(--accent-color)" />
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                <ToolbarButton icon={Video} title="Video Player" action={() => insertFormat(getVideoTemplate(), '', true)} color="var(--accent-color)" />
+                <ToolbarButton icon={Volume2} title="Audio Player" action={() => insertFormat(getAudioTemplate(), '', true)} color="var(--accent-color)" />
+                <ToolbarButton icon={Upload} title="Upload Image" action={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'image/*';
+                    fileInputRef.current.onchange = (e: any) => handleFileUpload(e, 'image');
+                    fileInputRef.current.click();
+                  }
+                }} color="var(--accent-color)" />
+                <ToolbarButton icon={Video} title="Upload Video" action={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'video/*';
+                    fileInputRef.current.onchange = (e: any) => handleFileUpload(e, 'video');
+                    fileInputRef.current.click();
+                  }
+                }} color="var(--accent-color)" />
+                <ToolbarButton icon={Volume2} title="Upload Audio" action={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'audio/*';
+                    fileInputRef.current.onchange = (e: any) => handleFileUpload(e, 'audio');
+                    fileInputRef.current.click();
+                  }
+                }} color="var(--accent-color)" />
+                <ToolbarButton icon={FileImage} title="Upload & Annotate" action={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'image/*';
+                    fileInputRef.current.onchange = (e: any) => handleFileUpload(e, 'image', 'annotate');
+                    fileInputRef.current.click();
+                  }
+                }} color="var(--accent-color)" />
+                <input type="file" ref={fileInputRef} className="hidden" />
               </Group>
               <Group label="Code">
                 <ToolbarButton icon={Code} title="Inline" action={() => insertFormat('`', '`')} />
@@ -155,6 +203,10 @@ export const EditorToolbar = ({
               <Group label="Diagram">
                 <ToolbarButton icon={Workflow} title="Mermaid" action={() => insertFormat('```mermaid\n', '\n```', true)} color="#c084fc" />
                 <ToolbarButton icon={Activity} title="Plotly" action={() => insertFormat(PLOT_TEMPLATE, '', true)} color="#c084fc" />
+                <ToolbarButton icon={Pin} title="Investigation Board" action={() => insertFormat(getBoardTemplate(), '', true)} color="#c084fc" />
+                <ToolbarButton icon={Cpu} title="HPC Roadmap" action={() => insertFormat(HPC_ROADMAP_TEMPLATE, '', true)} color="#c084fc" />
+                <ToolbarButton icon={Sparkles} title="AetherCAD Board" action={() => insertFormat(getAetherCadTemplate(), '', true)} color="#c084fc" />
+                <ToolbarButton icon={FileImage} title="AetherCAD Text" action={() => insertFormat(AETHERCAD_TEXT_TEMPLATE, '', true)} color="#c084fc" />
               </Group>
             </>
           )}
