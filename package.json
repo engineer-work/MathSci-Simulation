@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
@@ -12,22 +12,13 @@
   "dependencies": {
     "@google/genai": "^1.30.0",
     "@monaco-editor/react": "4.6.0",
-    "@prisma/client": "^7.6.0",
-    "axios": "^1.14.0",
-    "clsx": "^2.1.1",
-    "cors": "^2.8.6",
     "dexie": "^4.3.0",
     "dexie-react-hooks": "^4.2.0",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "fabric": "^7.2.0",
-    "framer-motion": "^12.38.0",
     "katex": "^0.16.27",
     "konva": "^10.2.3",
     "lucide-react": "^0.555.0",
     "mathjs": "^15.1.0",
     "mermaid": "10.9.0",
-    "prisma": "^7.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-konva": "^19.2.3",
@@ -37,13 +28,7 @@
     "rehype-raw": "7",
     "remark-gfm": "^4.0.1",
     "remark-math": "6",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
-    "tailwind-merge": "^3.5.0",
-    "three": "^0.183.2",
-    "tsx": "^4.21.0",
-    "uuid": "^13.0.0",
-    "zustand": "^5.0.12"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.2",

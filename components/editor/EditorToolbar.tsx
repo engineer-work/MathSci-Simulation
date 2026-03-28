@@ -13,7 +13,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../utils/db';
 import { 
-  PLOT_TEMPLATE, PHYSICS_TEMPLATE, REACTION_TEMPLATE, getIdeTemplate, getAnnotateTemplate, getSketchTemplate, getVideoTemplate, getAudioTemplate, getMediaTemplate, getBoardTemplate, HPC_ROADMAP_TEMPLATE, getAetherCadTemplate, AETHERCAD_TEXT_TEMPLATE 
+  PLOT_TEMPLATE, PHYSICS_TEMPLATE, REACTION_TEMPLATE, getIdeTemplate, getAnnotateTemplate, getSketchTemplate, getVideoTemplate, getAudioTemplate, getMediaTemplate, getBoardTemplate, HPC_ROADMAP_TEMPLATE 
 } from './templates';
 import { compressImageToTarget } from '../../utils/imageUtils';
 
@@ -205,8 +205,6 @@ export const EditorToolbar = ({
                 <ToolbarButton icon={Activity} title="Plotly" action={() => insertFormat(PLOT_TEMPLATE, '', true)} color="#c084fc" />
                 <ToolbarButton icon={Pin} title="Investigation Board" action={() => insertFormat(getBoardTemplate(), '', true)} color="#c084fc" />
                 <ToolbarButton icon={Cpu} title="HPC Roadmap" action={() => insertFormat(HPC_ROADMAP_TEMPLATE, '', true)} color="#c084fc" />
-                <ToolbarButton icon={Sparkles} title="AetherCAD Board" action={() => insertFormat(getAetherCadTemplate(), '', true)} color="#c084fc" />
-                <ToolbarButton icon={FileImage} title="AetherCAD Text" action={() => insertFormat(AETHERCAD_TEXT_TEMPLATE, '', true)} color="#c084fc" />
               </Group>
             </>
           )}
