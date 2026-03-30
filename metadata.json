@@ -1,5 +1,5 @@
 {
   "name": "MathSci Editor",
-  "description": "A powerful Markdown editor for Math and Science with file system management, PDF export, and integrated simulation engines.",
+  "description": "A powerful Markdown editor with outline-based folder/file generation for structured learning and planning.",
   "requestFramePermissions": []
 }

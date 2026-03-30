@@ -278,7 +278,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     map.forEach(list => {
       list.sort((a, b) => {
         if (a.type !== b.type) return a.type === NodeType.FOLDER ? -1 : 1;
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
       });
     });
     return map;

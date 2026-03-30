@@ -22,6 +22,7 @@ export const initialNodes: FileNode[] = [
   { id: 'folder-demos', parentId: null, name: 'Demos', type: NodeType.FOLDER, content: '', createdAt: Date.now() },
   { id: 'folder-templates', parentId: null, name: 'Templates', type: NodeType.FOLDER, content: '', createdAt: Date.now() },
   { id: 'folder-media', parentId: null, name: 'Media Playback', type: NodeType.FOLDER, content: '', createdAt: Date.now() },
+  { id: 'folder-planner', parentId: null, name: 'Learning Planner', type: NodeType.FOLDER, content: '', createdAt: Date.now() },
 
   // --- Welcome File ---
   { id: 'file-intro', parentId: 'folder-welcome', name: 'Intro', type: NodeType.FILE, content: `# Welcome to MathSci Editor 🚀
@@ -561,5 +562,605 @@ This demo showcases local media playback in MathSci.
   "src": "https://picsum.photos/seed/science/800/600"
 }
 \`\`\`
-`, createdAt: Date.now() }
+`, createdAt: Date.now() },
+  { id: 'planner-outline', parentId: 'folder-planner', name: 'Learning_Planner.outline', type: NodeType.FILE, content: `1. A+ LEVEL — Foundation
+  - One-Page Summary Template
+  - Visual Diagram Template
+  - Integrated Quiz Structure
+  - Reflection Prompts
+  - Checklist
+2. S LEVEL — Narrative & Emotion
+  - Narrative Summary Template
+  - Emotional Diagram Template
+  - Study Guide with Personal Connection
+  - Scenario-Based Quiz Template
+  - Reflection Prompts
+  - Checklist
+3. S+ LEVEL — Social Learning & AI Personas
+  - AI Personas to Create
+  - Teaching Script Template
+  - Role-Play Reversal Template
+  - Reflection Prompts
+  - Checklist
+4. S++ LEVEL — Spaced Repetition & Timing
+  - Spacing Schedule Template
+  - Forgetting Curve Tracking Template
+  - Variable Retrieval Prompts
+  - Reflection Prompts
+  - Checklist
+5. S+++ LEVEL — Transformation & Identity
+  - Phase 1: Invitation Template
+  - Phase 2: Immersion Log
+  - Phase 3: Discovery Tools
+  - Phase 4: Collaboration
+  - Phase 5: Creation
+  - Phase 6: Integration Reflection
+  - Phase 7: Spacing Ecosystem
+  - Phase 8: Legacy
+  - Checklist`, createdAt: Date.now() },
+  { id: 'planner-guide', parentId: 'folder-planner', name: 'Full_Learning_Guide.md', type: NodeType.FILE, content: `# WHAT TO DO AT EACH LEVEL
+
+## Separate Guide for Each Grade
+
+---
+
+# A+ LEVEL — Foundation
+
+## Goal: Create the Data Structure
+
+At A+ Level, your brain is **building new neural pathways** in the hippocampus and prefrontal cortex. The goal is **encoding** — getting the information into your brain in an organized, retrievable format.
+
+---
+
+### What to Do:
+
+| Step | Action | Time | Brain Mechanism |
+|------|--------|------|-----------------|
+| **1** | Read or listen to the material **once** for big picture | 10 min | Hippocampus begins encoding |
+| **2** | Create **One-Page Summary** with: Problem, Conflict, Gap, Solution, Takeaway | 15 min | Prefrontal cortex organizes; creates 5 chunks |
+| **3** | Draw **Visual Diagram** (flowchart) showing relationships | 10 min | Dual coding strengthens pathways |
+| **4** | Take **Integrated Quiz** (Multiple Choice + Short Answer + True/False) | 15 min | Active recall forces retrieval; LTP begins |
+| **5** | Answer **Reflection Prompts** (Surface + Strategic levels only) | 10 min | Elaboration creates multiple retrieval paths |
+
+---
+
+### One-Page Summary Template
+
+| Element | Your Answer |
+|---------|-------------|
+| The Problem |  |
+| The Conflict |  |
+| The Gap |  |
+| The Solution |  |
+| The Takeaway |  |
+| **Big Picture (One Sentence)** |  |
+
+---
+
+### Visual Diagram Template
+
+\`\`\`mermaid
+graph TD
+    A[Problem] --> B[Conflict]
+    B --> C[Gap]
+    C --> D[Solution]
+    D --> E[Outcome]
+\`\`\`
+
+---
+
+### Integrated Quiz Structure
+
+| Part | Questions | Purpose |
+|------|----------|---------|
+| Multiple Choice | 3 questions | Recognition |
+| Short Answer | 2 questions | Recall |
+| True/False with Justification | 3 statements | Critical thinking |
+
+---
+
+### Reflection Prompts (A+ Level Only)
+
+| Depth | Question |
+|-------|----------|
+| Surface | What is the key concept I learned? |
+| Strategic | What strategy helped me understand this? |
+
+---
+
+### Checklist for A+ Level
+
+\`\`\`
+☐ Completed One-Page Summary
+☐ Completed Visual Diagram
+☐ Completed Integrated Quiz (scored 80%+)
+☐ Completed Surface + Strategic Reflection
+☐ Total time: 60 minutes
+\`\`\`
+
+---
+
+### Neural Outcome:
+
+| Metric | Result |
+|--------|--------|
+| New Synapses | 500–1,000 |
+| Retrieval Speed | 3–5 seconds |
+| Durability | 1–7 days (without spacing) |
+| Network Structure | Linear; isolated pathways |
+
+---
+
+### When to Move to S Level:
+
+- ✅ When you can recall all 5 parts without looking
+- ✅ When you score 80%+ on your Integrated Quiz
+- ✅ When you understand the big picture in one sentence
+
+---
+
+# S LEVEL — Narrative & Emotion
+
+## Goal: Add Emotional Indexing
+
+At S Level, your brain is **attaching emotional tags** to the neural pathways created in A+. The amygdala activates, releasing dopamine and norepinephrine, which **strengthen synaptic connections** by 2–3x.
+
+---
+
+### What to Do:
+
+| Step | Action | Time | Brain Mechanism |
+|------|--------|------|-----------------|
+| **1** | Transform your One-Page Summary into a **story** with a character and emotional arc | 20 min | Narrative activates multiple brain regions simultaneously |
+| **2** | Add **emotional states** to your Visual Diagram | 10 min | Emotional tagging strengthens each node |
+| **3** | Add **"My Connection" column** to your Study Guide | 15 min | Personal relevance activates default mode network |
+| **4** | Convert your quiz into **real-life scenarios** with emotional stakes | 15 min | Scenario-based learning engages amygdala |
+| **5** | Add **Identity Reflection** question: "Who am I becoming?" | 10 min | Identity integration begins |
+
+---
+
+### Narrative Summary Template
+
+> **Character:** _________________________
+>
+> **Situation:** ________________________________________________________________
+>
+> **The Moment of Tension:** ____________________________________________________
+>
+> **The Learning (What they discover):** ________________________________________
+>
+> **The Resolution:** ___________________________________________________________
+>
+> **Emotional Arc:** Start Feeling: ________ → Middle Feeling: ________ → End Feeling: ________
+
+---
+
+### Emotional Diagram Template
+
+\`\`\`mermaid
+graph TD
+    A[Problem] -->|Confidence| B[Initial Attempt]
+    B -->|Confusion| C[Struggle]
+    C -->|Curiosity| D[Discovery]
+    D -->|Earned Confidence| E[Mastery]
+\`\`\`
+
+---
+
+### Study Guide with Personal Connection
+
+| Concept | Definition | Example | **My Connection** |
+|---------|------------|---------|-------------------|
+|  |  |  |  |
+|  |  |  |  |
+|  |  |  |  |
+
+---
+
+### Scenario-Based Quiz Template
+
+**Scenario:** ________________________________________________________________
+
+**Question:** ________________________________________________________________
+
+**Answer:** ________________________________________________________________
+
+**Why this matters to you:** __________________________________________________
+
+---
+
+### Reflection Prompts (S Level)
+
+| Depth | Question |
+|-------|----------|
+| Surface | What is the key concept? |
+| Strategic | What strategy helped me? |
+| **Deep (New)** | Why does intuition fail here? What emotion did I feel while learning? |
+| **Identity (New)** | Who am I becoming as I learn this? |
+
+---
+
+### Checklist for S Level
+
+\`\`\`
+☐ One-Page Summary transformed into story with character
+☐ Emotional states added to diagram
+☐ "My Connection" column added to study guide
+☐ Quiz converted to real-life scenarios
+☐ Identity Reflection completed
+☐ Total additional time: 70 minutes
+\`\`\`
+
+---
+
+### Neural Outcome:
+
+| Metric | Result |
+|--------|--------|
+| New Synapses | 2,000–5,000 |
+| Retrieval Speed | 1–2 seconds |
+| Durability | 7–30 days |
+| Network Structure | Narrative chains; emotional tags attached |
+
+---
+
+### When to Move to S+ Level:
+
+- ✅ When you can tell the story of the concept to someone else
+- ✅ When you feel an emotional connection to the material
+- ✅ When you can answer "Who am I becoming?"
+
+---
+
+# S+ LEVEL — Social Learning & AI Personas
+
+## Goal: Activate Mirror Neurons Through Teaching
+
+At S+ Level, your brain is **activating mirror neurons** by teaching AI personas. Teaching forces you to reorganize knowledge, identify gaps, and strengthen pathways through **dual encoding** (declarative + procedural memory).
+
+---
+
+### What to Do:
+
+| Step | Action | Time | Brain Mechanism |
+|------|--------|------|-----------------|
+| **1** | Create **3 AI Personas** with distinct cognitive biases | 15 min | Prefrontal cortex engages theory of mind |
+| **2** | **Teach Method 1** (One-Page Summary) to each persona | 15 min | Mirror neurons activate; teaching strengthens learning |
+| **3** | **Teach Method 2** (Visual Diagram) to each persona | 15 min | Dual pathways form |
+| **4** | **Teach Method 3** (Study Guide) to each persona | 15 min | Error detection strengthens accuracy |
+| **5** | **Teach Method 4** (Integrated Quiz) to each persona | 15 min | Retrieval practice reinforced |
+| **6** | **Teach Method 5** (Reflection) to each persona | 15 min | Metacognition deepens |
+| **7** | **Role-Play Reversal** — argue from the persona's perspective | 15 min | Perspective-taking expands neural flexibility |
+| **8** | **Reflect** on what teaching revealed about your understanding | 10 min | Metacognitive awareness strengthens |
+
+---
+
+### AI Personas to Create
+
+| Persona | Bias | Challenge They Present |
+|---------|------|------------------------|
+| **The Intuitionist** | Believes gut feelings are reliable | "But it feels right. Why would I need math?" |
+| **The Overwhelmed** | Feels 5 methods are too many | "I cannot remember all this. I will fail." |
+| **The Skeptic** | Doubts the value of learning | "How do you know this is actually true?" |
+
+---
+
+### Teaching Script Template
+
+**Persona:** _________________________
+
+**Method I Am Teaching:** _________________________
+
+**What I Said:** ________________________________________________________________
+
+**How Persona Challenged Me:** __________________________________________________
+
+**How I Adapted:** ______________________________________________________________
+
+**What This Revealed About My Understanding:** __________________________________
+
+---
+
+### Role-Play Reversal Template
+
+**Persona I Played:** _________________________
+
+**Position I Defended:** ________________________________________________________
+
+**What I Learned from Arguing This Side:** ______________________________________
+
+**How This Deepened My Understanding:** ________________________________________
+
+---
+
+### Reflection Prompts (S+ Level)
+
+| Depth | Question |
+|-------|----------|
+| Surface | What methods did I teach? |
+| Strategic | What did teaching reveal about gaps in my understanding? |
+| Deep | Why is teaching the highest form of learning? |
+| Identity | What kind of teacher am I becoming? |
+
+---
+
+### Checklist for S+ Level
+
+\`\`\`
+☐ Created 3 AI personas (The Intuitionist, The Overwhelmed, The Skeptic)
+☐ Taught Method 1 to all 3 personas
+☐ Taught Method 2 to all 3 personas
+☐ Taught Method 3 to all 3 personas
+☐ Taught Method 4 to all 3 personas
+☐ Taught Method 5 to all 3 personas
+☐ Completed Role-Play Reversal for at least 1 persona
+☐ Completed Teaching Reflection
+☐ Total time: 115 minutes (spread across sessions)
+\`\`\`
+
+---
+
+### Neural Outcome:
+
+| Metric | Result |
+|--------|--------|
+| New Synapses | 10,000–20,000 |
+| Retrieval Speed | 0.5–1 second |
+| Durability | 30–90 days |
+| Network Structure | Dual pathways (knowing + teaching); error-corrected |
+
+---
+
+### When to Move to S++ Level:
+
+- ✅ When you can teach all 5 methods to any persona without hesitation
+- ✅ When you can argue from opposing perspectives
+- ✅ When you can identify gaps in your own understanding through teaching
+
+---
+
+# S++ LEVEL — Spaced Repetition & Timing
+
+## Goal: Optimize for Time Through Myelination
+
+At S++ Level, your brain is **myelinating axons** and **transferring information** from hippocampus to neocortex for permanent storage. Spaced reviews at optimal intervals strengthen Long-Term Potentiation (LTP) by 50–70% per review.
+
+---
+
+### What to Do:
+
+| Step | Action | Time | Brain Mechanism |
+|------|--------|------|-----------------|
+| **1** | Create **Spacing Schedule** for all 5 methods | 10 min | Prefrontal cortex plans retrieval timing |
+| **2** | **Day 3 Review:** Method 1 (One-Page Summary) | 10 min | First spaced recall; LTP strengthens |
+| **3** | **Day 7 Review:** Method 2 (Visual Diagram) | 10 min | Second spaced recall |
+| **4** | **Day 14 Review:** Method 3 (Study Guide) | 15 min | Hippocampal-neocortical transfer begins |
+| **5** | **Day 30 Review:** Method 4 (Integrated Quiz) | 20 min | Myelination accelerates |
+| **6** | **Day 60 Review:** Method 5 (Reflection Prompts) | 20 min | Automaticity developing |
+| **7** | **Day 90 Review:** All 5 Methods Combined | 30 min | Permanent storage achieved |
+| **8** | **Variable Retrieval:** Unexpected prompts at random times | Ongoing | Random retrieval strengthens all pathways |
+
+---
+
+### Spacing Schedule Template
+
+| Interval | Method to Review | Time | Completed |
+|----------|------------------|------|-----------|
+| Day 3 | Method 1: One-Page Summary | 10 min | ☐ |
+| Day 7 | Method 2: Visual Diagram | 10 min | ☐ |
+| Day 14 | Method 3: Study Guide | 15 min | ☐ |
+| Day 30 | Method 4: Integrated Quiz | 20 min | ☐ |
+| Day 60 | Method 5: Reflection Prompts | 20 min | ☐ |
+| Day 90 | All 5 Methods Combined | 30 min | ☐ |
+| Variable | Random retrieval prompts | Varies | ☐ |
+
+---
+
+### Forgetting Curve Tracking Template
+
+| Date | Method | Recall Score (0–10) | Notes |
+|------|--------|---------------------|-------|
+|  |  |  |  |
+|  |  |  |  |
+|  |  |  |  |
+
+---
+
+### Variable Retrieval Prompts
+
+Create unexpected prompts that appear in different contexts:
+
+| Context | Prompt |
+|---------|--------|
+| Morning | "Without looking, recall your big picture sentence." |
+| After work | "Explain Method 1 to an imaginary colleague." |
+| Random | "What is the emotional arc of your story?" |
+| Before sleep | "What strategy helped you learn best?" |
+
+---
+
+### Reflection Prompts (S++ Level)
+
+| Depth | Question |
+|-------|----------|
+| Surface | What is my spacing schedule? |
+| Strategic | How has my recall improved over 90 days? |
+| Deep | Why does timing matter as much as method? |
+| Identity | How has my relationship with time changed? |
+
+---
+
+### Checklist for S++ Level
+
+\`\`\`
+☐ Created spacing schedule for 90 days
+☐ Completed Day 3 review
+☐ Completed Day 7 review
+☐ Completed Day 14 review
+☐ Completed Day 30 review
+☐ Completed Day 60 review
+☐ Completed Day 90 review
+☐ Created variable retrieval prompts
+☐ Tracked forgetting curve
+☐ Total time: 105 minutes (distributed over 90 days)
+\`\`\`
+
+---
+
+### Neural Outcome:
+
+| Metric | Result |
+|--------|--------|
+| New Synapses | 50,000–100,000 |
+| Retrieval Speed | 0.1–0.3 seconds |
+| Durability | 1–5 years |
+| Network Structure | Fully integrated; myelinated; automatic |
+
+---
+
+### When to Move to S+++ Level:
+
+- ✅ When you can recall all 5 methods without conscious effort
+- ✅ When you have completed all spaced reviews
+- ✅ When retrieval feels automatic and effortless
+
+---
+
+# S+++ LEVEL — Transformation & Identity
+
+## Goal: Integrate Knowledge into Identity and Create Legacy
+
+At S+++ Level, your brain is **integrating knowledge into self-concept** through the Default Mode Network. Information is no longer something you *know* — it becomes something you *are*. Teaching others and creating legacy reinforces all pathways permanently.
+
+---
+
+### What to Do:
+
+| Phase | Action | Time | Brain Mechanism |
+|-------|--------|------|-----------------|
+| **Phase 1: Invitation** | Answer: "What do I want to become?" | 15 min | Default mode network activates identity processing |
+| **Phase 2: Immersion** | Live in scenarios using the 5 methods for 4 weeks | 30 min/week | Information becomes experiential |
+| **Phase 3: Discovery** | Build your own tools using the 5 methods | 2 hours | Creation strengthens pathways |
+| **Phase 4: Collaboration** | Work with AI collaborators on complex problems | 2 hours | Multiple perspectives integrate |
+| **Phase 5: Creation** | Create something new (course, video, guide) | 3 hours | Creative recombination forms novel pathways |
+| **Phase 6: Integration** | Complete layered reflection (surface to identity) | 30 min | Identity integration solidifies |
+| **Phase 7: Spacing Ecosystem** | Maintain ongoing spaced reviews | Ongoing | Permanent retention |
+| **Phase 8: Legacy** | Teach others and build systems that scale | Ongoing | Teaching reinforces all pathways |
+
+---
+
+### Phase 1: Invitation Template
+
+**What do I want to become?**
+________________________________________________________________
+
+**Why does this matter to me?**
+________________________________________________________________
+
+**What will be different in my life when I achieve this?**
+________________________________________________________________
+
+---
+
+### Phase 2: Immersion — Weekly Scenario Log
+
+| Week | Scenario | Methods Used | What I Learned |
+|------|----------|--------------|----------------|
+| 1 |  |  |  |
+| 2 |  |  |  |
+| 3 |  |  |  |
+| 4 |  |  |  |
+
+---
+
+### Phase 3: Discovery — Tools I Built
+
+| Tool | Method Used | How I Built It |
+|------|-------------|----------------|
+|  |  |  |
+|  |  |  |
+|  |  |  |
+
+---
+
+### Phase 4: Collaboration — AI Collaborators
+
+| Collaborator | Role | What We Accomplished |
+|--------------|------|----------------------|
+|  |  |  |
+|  |  |  |
+|  |  |  |
+
+---
+
+### Phase 5: Creation — What I Created
+
+**What I Created:** ____________________________________________________________
+
+**Who It Helps:** _______________________________________________________________
+
+**How It Uses the 5 Methods:** __________________________________________________
+
+---
+
+### Phase 6: Integration — Layered Reflection
+
+| Depth | Question | My Answer |
+|-------|----------|-----------|
+| Surface | What are the 5 methods? |  |
+| Strategic | What strategy helped me most? |  |
+| Deep | Why does this matter beyond the topic? |  |
+| Identity | Who was I before? Who am I now? |  |
+| Meta-Learning | How will I learn next? |  |
+
+---
+
+### Phase 7: Spacing Ecosystem — Ongoing
+
+| Interval | Activity | Completed |
+|----------|----------|-----------|
+| Monthly | Review all 5 methods | ☐ |
+| Quarterly | Teach someone new | ☐ |
+| Yearly | Create new application | ☐ |
+| Variable | Random retrieval | ☐ |
+
+---
+
+### Phase 8: Legacy — What I Leave Behind
+
+**What I Will Leave Behind:**
+________________________________________________________________
+
+**How I Will Help Others Learn:**
+________________________________________________________________
+
+**My Identity Statement:**
+> I am someone who ____________________________________________________________
+
+---
+
+### Checklist for S+++ Level
+
+\`\`\`
+☐ Phase 1: Invitation completed
+☐ Phase 2: Immersion (4 weeks of scenarios)
+☐ Phase 3: Discovery (built own tools)
+☐ Phase 4: Collaboration (worked with AI collaborators)
+☐ Phase 5: Creation (created something new)
+☐ Phase 6: Integration (layered reflection completed)
+☐ Phase 7: Spacing Ecosystem established
+☐ Phase 8: Legacy system built
+☐ Total time: 8–10 hours + ongoing
+\`\`\`
+
+---
+
+### Neural Outcome:
+
+| Metric | Result |
+|--------|--------|
+| New Synapses | 200,000–500,000 |
+| Retrieval Speed | Instantaneous (0.05 seconds) |
+| Durability | Lifetime |
+| Network Structure | Fully integrated; identity-level; permanent |`, createdAt: Date.now() }
 ];

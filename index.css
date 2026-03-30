@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 @import "tailwindcss";
 
 @theme {
@@ -47,24 +48,29 @@ body {
 /* Custom styles that are not utility-friendly or specific to markdown */
 
 .markdown-body { color: var(--text-main); line-height: 1.6; max-width: 100%; margin: 0 auto; }
-.markdown-body p { margin-bottom: 1rem; }
-.markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-.markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
-.markdown-body li { margin-bottom: 0.25rem; }
-.markdown-body h1 { font-size: 2.25rem; font-weight: 800; }
-.markdown-body h2 { font-size: 1.875rem; font-weight: 700; }
-.markdown-body h3 { font-size: 1.5rem; font-weight: 600; }
-.markdown-body h4 { font-size: 1.25rem; font-weight: 600; }
-.markdown-body h5 { font-size: 1.125rem; font-weight: 600; }
-.markdown-body h6 { font-size: 1rem; font-weight: 600; }
-.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 { 
+.markdown-body-light { color: #1f2937; line-height: 1.6; max-width: 100%; margin: 0 auto; }
+.markdown-body p, .markdown-body-light p { margin-bottom: 1rem; }
+.markdown-body ul, .markdown-body-light ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+.markdown-body ol, .markdown-body-light ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+.markdown-body li, .markdown-body-light li { margin-bottom: 0.25rem; }
+.markdown-body h1, .markdown-body-light h1 { font-size: 2.25rem; font-weight: 800; }
+.markdown-body h2, .markdown-body-light h2 { font-size: 1.875rem; font-weight: 700; }
+.markdown-body h3, .markdown-body-light h3 { font-size: 1.5rem; font-weight: 600; }
+.markdown-body h4, .markdown-body-light h4 { font-size: 1.25rem; font-weight: 600; }
+.markdown-body h5, .markdown-body-light h5 { font-size: 1.125rem; font-weight: 600; }
+.markdown-body h6, .markdown-body-light h6 { font-size: 1rem; font-weight: 600; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6,
+.markdown-body-light h1, .markdown-body-light h2, .markdown-body-light h3, .markdown-body-light h4, .markdown-body-light h5, .markdown-body-light h6 { 
   border-bottom: 1px solid var(--border-color); 
   padding-bottom: 0.3em; 
   margin-top: 1.5em; 
   margin-bottom: 1em; 
   line-height: 1.25;
 }
-.markdown-body img { 
+.markdown-body-light h1, .markdown-body-light h2, .markdown-body-light h3, .markdown-body-light h4, .markdown-body-light h5, .markdown-body-light h6 {
+  border-bottom-color: #e5e7eb;
+}
+.markdown-body img, .markdown-body-light img { 
   max-width: 100%; 
   height: auto; 
   display: block; 
@@ -73,15 +79,20 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 .markdown-body pre { background-color: var(--bg-sidebar); padding: 1em; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; border: 1px solid var(--border-color); }
+.markdown-body-light pre { background-color: #f9fafb; padding: 1em; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; border: 1px solid #e5e7eb; color: #1f2937; }
 
-.markdown-body table { 
+.markdown-body table, .markdown-body-light table { 
   width: 100%; 
   border-collapse: collapse; 
   margin-bottom: 1.5rem; 
   border: 1px solid var(--border-color);
   background-color: rgba(255,255,255,0.02);
 }
-.markdown-body th { 
+.markdown-body-light table {
+  border-color: #e5e7eb;
+  background-color: #ffffff;
+}
+.markdown-body th, .markdown-body-light th { 
   background-color: var(--bg-sidebar); 
   color: var(--text-main); 
   font-weight: bold; 
@@ -89,12 +100,24 @@ body {
   border: 1px solid var(--border-color);
   text-align: left;
 }
-.markdown-body td { 
+.markdown-body-light th {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+.markdown-body td, .markdown-body-light td { 
   padding: 8px 12px; 
   border: 1px solid var(--border-color);
 }
+.markdown-body-light td {
+  border-color: #e5e7eb;
+  color: #374151;
+}
 .markdown-body tr:nth-child(even) {
   background-color: rgba(255,255,255,0.03);
+}
+.markdown-body-light tr:nth-child(even) {
+  background-color: #f9fafb;
 }
 
 .markdown-body ul.contains-task-list {

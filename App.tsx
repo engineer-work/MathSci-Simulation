@@ -156,11 +156,16 @@ export default function App() {
   };
 
   const recursiveDelete = async (id: string) => {
-    const children = await db.nodes.where('parentId').equals(id).toArray();
-    for (const child of children) {
-      await recursiveDelete(child.id);
-    }
-    await db.nodes.delete(id);
+    const idsToDelete: string[] = [id];
+    const collectIds = async (parentId: string) => {
+      const children = await db.nodes.where('parentId').equals(parentId).toArray();
+      for (const child of children) {
+        idsToDelete.push(child.id);
+        await collectIds(child.id);
+      }
+    };
+    await collectIds(id);
+    await db.nodes.bulkDelete(idsToDelete);
   };
 
   const handleExportJSON = async () => {
@@ -414,8 +419,22 @@ export default function App() {
                   content={activeFile.content} 
                   fileName={activeFile.name}
                   allNodes={nodes}
+                  activeFileId={activeFileId}
                   viewMode={editorView}
                   onChange={handleUpdateContent} 
+                  onAddNodes={async (newNodes) => {
+                    await db.nodes.bulkPut(newNodes);
+                    // Expand all parent folders of new nodes
+                    const parents = new Set<string>();
+                    newNodes.forEach(n => { if (n.parentId) parents.add(n.parentId); });
+                    if (parents.size > 0) {
+                      setExpandedFolders(prev => {
+                        const next = new Set(prev);
+                        parents.forEach(p => next.add(p));
+                        return next;
+                      });
+                    }
+                  }}
                   isCornell={activeFile.isCornell}
                 />
             ) : (

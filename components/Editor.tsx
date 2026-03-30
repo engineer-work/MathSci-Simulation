@@ -17,15 +17,19 @@ import { PhysicsSimulation } from './engines/PhysicsSimulation';
 import { ImageAnnotationEngine } from './engines/ImageAnnotationEngine';
 import { MediaBlock } from './engines/MediaBlock';
 import { InvestigationBoard } from './engines/InvestigationBoard';
+import { QuizEngine } from './engines/QuizEngine';
 import { CodeEditorEngine } from './engines/CodeEditorEngine';
 import { EditorToolbar } from './editor/EditorToolbar';
 import { FileNode } from '../types';
+import { generateFromOutline } from '../src/utils/outlineParser';
 
 interface EditorProps {
   content: string;
   fileName: string;
   allNodes: FileNode[];
+  activeFileId: string | null;
   onChange: (content: string) => void;
+  onAddNodes: (nodes: FileNode[]) => Promise<void>;
   readOnly?: boolean;
   viewMode?: 'split' | 'editor' | 'preview';
   isCornell?: boolean;
@@ -123,7 +127,9 @@ export const Editor: React.FC<EditorProps> = ({
   content, 
   fileName, 
   allNodes, 
+  activeFileId,
   onChange, 
+  onAddNodes,
   readOnly = false, 
   viewMode = 'split',
   isCornell = false
@@ -132,9 +138,26 @@ export const Editor: React.FC<EditorProps> = ({
   const previewRef = useRef<HTMLDivElement>(null);
   const [localContent, setLocalContent] = useState(content);
   const [isCornellMode, setIsCornellMode] = useState(isCornell);
+  const [isGenerating, setIsGenerating] = useState(false);
   const lastSavedContent = useRef(content);
   const localContentRef = useRef(content);
   localContentRef.current = localContent; // Update on every render
+
+  const handleGenerateOutline = async () => {
+    if (!activeFileId) return;
+    const activeNode = allNodes.find(n => n.id === activeFileId);
+    if (!activeNode) return;
+
+    setIsGenerating(true);
+    try {
+      await generateFromOutline(localContent, activeNode.parentId, onAddNodes);
+      // Maybe show a success message?
+    } catch (err) {
+      console.error("Outline generation failed:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   
   // Update local state when file changes
   useEffect(() => {
@@ -277,6 +300,22 @@ export const Editor: React.FC<EditorProps> = ({
     }
   }, [onChange]);
 
+  const handleQuizUpdate = useCallback((targetId: string, newConfigStr: string) => {
+    const updated = localContentRef.current.replace(/```quiz\s*([\s\S]*?)\s*```/g, (match, inner) => {
+      const parsed = safeJsonParse(inner.trim());
+      if (parsed?.internal_block_id === targetId) {
+        return `\`\`\`quiz\n${newConfigStr}\n\`\`\``;
+      }
+      return match;
+    });
+    
+    if (updated !== localContentRef.current) {
+      setLocalContent(updated);
+      lastSavedContent.current = updated;
+      onChange(updated);
+    }
+  }, [onChange]);
+
   const markdownComponents = useMemo(() => ({
     h1: ({ children }: any) => <h1 className="text-4xl font-extrabold text-white mt-10 mb-6 border-b-2 border-white/10 pb-3 tracking-tight">{children}</h1>,
     h2: ({ children }: any) => <h2 className="text-3xl font-bold text-white mt-8 mb-4 border-b border-white/5 pb-2 tracking-tight">{children}</h2>,
@@ -403,6 +442,17 @@ export const Editor: React.FC<EditorProps> = ({
                 />
               );
             }
+            case 'quiz': {
+              const parsed = safeJsonParse(rawCodeContent.trim());
+              return (
+                <QuizEngine 
+                  key={parsed?.internal_block_id || rawCodeContent}
+                  configStr={rawCodeContent} 
+                  onUpdate={(newStr) => parsed?.internal_block_id && handleQuizUpdate(parsed.internal_block_id, newStr)}
+                  readOnly={readOnly}
+                />
+              );
+            }
             case 'physics': return <PhysicsSimulation configStr={rawCodeContent} />;
           }
         }
@@ -455,8 +505,25 @@ export const Editor: React.FC<EditorProps> = ({
           readOnly={true} 
         />
       );
-    }
-  }), [handleIDEUpdate, handleAnnotateUpdate, handlePlotUpdate, handleModelUpdate, handleSketchUpdate, handleMediaUpdate, handleBoardUpdate, readOnly, isCornellMode]);
+    },
+    'quiz-board': (props: any) => {
+      const config = {
+        internal_block_id: props.id || uuidv4(),
+        items: [],
+        connections: [],
+        ...props
+      };
+      return (
+        <QuizEngine 
+          configStr={JSON.stringify(config)} 
+          onUpdate={() => {}} 
+          readOnly={true} 
+        />
+      );
+    },
+    div: ({node, className, ...props}: any) => className?.includes('math-display') ? <div dangerouslySetInnerHTML={{__html: (window as any).katex?.renderToString(props['data-math'], {displayMode:true, throwOnError:false}) || ''}} {...props}/> : <div className={className} {...props}/>,
+    span: ({node, className, ...props}: any) => className?.includes('math-inline') ? <span dangerouslySetInnerHTML={{__html: (window as any).katex?.renderToString(props['data-math'], {displayMode:false, throwOnError:false}) || ''}} {...props}/> : <span className={className} {...props}/>
+  }), [handleIDEUpdate, handleAnnotateUpdate, handlePlotUpdate, handleModelUpdate, handleSketchUpdate, handleMediaUpdate, handleBoardUpdate, handleQuizUpdate, readOnly, isCornellMode]);
 
   const cornellData = useMemo(() => {
     if (!isCornellMode) return null;
@@ -496,6 +563,9 @@ export const Editor: React.FC<EditorProps> = ({
             isCornell={isCornell}
             isCornellMode={isCornellMode}
             onToggleCornell={setIsCornellMode}
+            isOutlineFile={fileName.toLowerCase().endsWith('.outline')}
+            onGenerateOutline={handleGenerateOutline}
+            isGenerating={isGenerating}
           />
         )}
       </div>

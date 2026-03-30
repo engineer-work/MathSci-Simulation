@@ -8,12 +8,12 @@ import {
   Quote, Code, Link, Image, Table, Minus,
   Sigma, Workflow, Hexagon, Activity, Atom, 
   Terminal, Upload, FileImage, Globe, Copy, Check, X,
-  Layout, Cpu, MapPin, Pencil, Video, Volume2, Sparkles, Pin
+  Layout, Cpu, MapPin, Pencil, Video, Volume2, Sparkles, Pin, RotateCcw, HelpCircle
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../utils/db';
 import { 
-  PLOT_TEMPLATE, PHYSICS_TEMPLATE, REACTION_TEMPLATE, getIdeTemplate, getAnnotateTemplate, getSketchTemplate, getVideoTemplate, getAudioTemplate, getMediaTemplate, getBoardTemplate, HPC_ROADMAP_TEMPLATE 
+  PLOT_TEMPLATE, PHYSICS_TEMPLATE, REACTION_TEMPLATE, getIdeTemplate, getAnnotateTemplate, getSketchTemplate, getVideoTemplate, getAudioTemplate, getMediaTemplate, getBoardTemplate, getQuizTemplate, HPC_ROADMAP_TEMPLATE 
 } from './templates';
 import { compressImageToTarget } from '../../utils/imageUtils';
 
@@ -24,13 +24,19 @@ export const EditorToolbar = ({
   readOnly, 
   isCornell, 
   isCornellMode, 
-  onToggleCornell 
+  onToggleCornell,
+  isOutlineFile,
+  onGenerateOutline,
+  isGenerating
 }: { 
   insertFormat: (p: string, s?: string, b?: boolean) => void, 
   readOnly?: boolean,
   isCornell?: boolean,
   isCornellMode?: boolean,
-  onToggleCornell?: (val: boolean) => void
+  onToggleCornell?: (val: boolean) => void,
+  isOutlineFile?: boolean,
+  onGenerateOutline?: () => void,
+  isGenerating?: boolean
 }) => {
   const [activeTab, setActiveTab] = useState<TabName>('Write');
   const [uploadStatus, setUploadStatus] = useState<{name: string, syntax: string, size?: number} | null>(null);
@@ -153,6 +159,19 @@ export const EditorToolbar = ({
                   </button>
                 </Group>
               )}
+              {isOutlineFile && onGenerateOutline && (
+                <Group label="Outline">
+                  <button 
+                    onClick={onGenerateOutline} 
+                    disabled={isGenerating}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20`}
+                    title="Generate folders and files from this outline"
+                  >
+                    {isGenerating ? <RotateCcw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    {isGenerating ? 'Generating...' : 'Generate'}
+                  </button>
+                </Group>
+              )}
             </>
           )}
 
@@ -204,6 +223,7 @@ export const EditorToolbar = ({
                 <ToolbarButton icon={Workflow} title="Mermaid" action={() => insertFormat('```mermaid\n', '\n```', true)} color="#c084fc" />
                 <ToolbarButton icon={Activity} title="Plotly" action={() => insertFormat(PLOT_TEMPLATE, '', true)} color="#c084fc" />
                 <ToolbarButton icon={Pin} title="Investigation Board" action={() => insertFormat(getBoardTemplate(), '', true)} color="#c084fc" />
+                <ToolbarButton icon={HelpCircle} title="Quiz Board" action={() => insertFormat(getQuizTemplate(), '', true)} color="#c084fc" />
                 <ToolbarButton icon={Cpu} title="HPC Roadmap" action={() => insertFormat(HPC_ROADMAP_TEMPLATE, '', true)} color="#c084fc" />
               </Group>
             </>
