@@ -1181,7 +1181,7 @@ Key notes:
   - Stage 5 Data Hall: Enterprise servers (NVIDIA DGX/HGX A100 or H100 systems, each 8–16 GPUs at ~€200K+), plus dozens of smaller GPU nodes. *Power*: 1–2 MW capacity (grid connection, transformers)【1†L90-L99】. *Cooling*: Industrial chillers or liquid-cooling; possibly immersion. *Security*: 24/7 guarded access, biometric locks. *Backup*: Generators (100–500 kVA ~€20K–€100K) and UPS (tens of kVA, €10K+).  
   - Stage 6 Superscale: Similar components as Stage 5, scaled to 10s of MW. Building materials (steel, concrete) add ~$50–$75/sqft【3†L168-L176】. MV substations, N+1 redundancy. Possibly bespoke HPC racks or pods (e.g. Cray/HPE Slingshot chassis).  
 
-- **Power & Cooling**: HPC racks (each 100kW) demand high-voltage distribution. For example, supplying 100 kW/rack at 415 V (common EU standard) needs only 120 A per phase, but US sites at 208 V need heavy upgrade (~$0.5M–$1M per MW)【3†L79-L88】. Expect electrical costs ~$0.10–0.25/kWh: a 1 MW load running continuously uses ~8,760 MWh/year (~€876K–€2.2M/year at $0.10–$0.25/kWh). AI-optimized data halls cost **$20M+ per MW** to build【1†L99-L107】.  
+- **Power & Cooling**: HPC racks (each 100kW) demand high-voltage distribution. For example, supplying 100 kW/rack at 415 V (common EU standard) needs only 120 A per phase, but US sites at 208 V need heavy upgrade (~/$0.5M–/$1M per MW)【3†L79-L88】. Expect electrical costs ~/$0.10–0.25/kWh: a 1 MW load running continuously uses ~8,760 MWh/year (~€876K–€2.2M/year at /$0.10–/$0.25/kWh). AI-optimized data halls cost **/$20M+ per MW** to build【1†L99-L107】.  
   - Cooling: Above ~50 kW/rack, air cooling fails. Rear-door heat-exchangers handle ~50–75kW【3†L123-L131】; beyond that use liquid cooling (cold plates or immersion). Liquid systems (InRackCDU, aisle chillers) cost **€10K–€50K per rack** depending on density. HPC builds often invest ~$25M extra per MW for liquid cooling【1†L101-L105】.  
   - **Transport & Installation**: Moving equipment (racks, generators) is nontrivial. Large data center relocations (>100 racks) run **$400K+**【32†L133-L136】. E.g., Frontier’s 296-ton machine required specialized shipping and cranes. In practice, one might budget 1–5% of hardware cost for logistics.  
 
@@ -1333,40 +1333,43 @@ This demo showcases local media playback in MathSci.
 }
 \`\`\`
 `,createdAt:Date.now()},{id:"planner-outline",parentId:"folder-planner",name:"Learning_Planner.outline",type:Ga.FILE,content:`1. A+ LEVEL — Foundation
-  - One-Page Summary Template
-  - Visual Diagram Template
-  - Integrated Quiz Structure
-  - Reflection Prompts
-  - Checklist
+  - 1. Transcript
+  - 2. Session Flow Template
+  - 3. Cornell Notes Template
+  - 4. One-Page Summary Template
+  - 5. Visual Diagram Template
+  - 6. Integrated Quiz Structure
+  - 7. Reflection Prompts
+  - 8. Checklist
 2. S LEVEL — Narrative & Emotion
-  - Narrative Summary Template
-  - Emotional Diagram Template
-  - Study Guide with Personal Connection
-  - Scenario-Based Quiz Template
-  - Reflection Prompts
-  - Checklist
+  - 1. Narrative Summary Template
+  - 2. Emotional Diagram Template
+  - 3. Study Guide with Personal Connection
+  - 4. Scenario-Based Quiz Template
+  - 5. Reflection Prompts
+  - 6. Checklist
 3. S+ LEVEL — Social Learning & AI Personas
-  - AI Personas to Create
-  - Teaching Script Template
-  - Role-Play Reversal Template
-  - Reflection Prompts
-  - Checklist
+  - 1. AI Personas to Create
+  - 2. Teaching Script Template
+  - 3. Role-Play Reversal Template
+  - 4. Reflection Prompts
+  - 5. Checklist
 4. S++ LEVEL — Spaced Repetition & Timing
-  - Spacing Schedule Template
-  - Forgetting Curve Tracking Template
-  - Variable Retrieval Prompts
-  - Reflection Prompts
-  - Checklist
+  - 1. Spacing Schedule Template
+  - 2. Forgetting Curve Tracking Template
+  - 3. Variable Retrieval Prompts
+  - 4. Reflection Prompts
+  - 5. Checklist
 5. S+++ LEVEL — Transformation & Identity
-  - Phase 1: Invitation Template
-  - Phase 2: Immersion Log
-  - Phase 3: Discovery Tools
-  - Phase 4: Collaboration
-  - Phase 5: Creation
-  - Phase 6: Integration Reflection
-  - Phase 7: Spacing Ecosystem
-  - Phase 8: Legacy
-  - Checklist`,createdAt:Date.now()},{id:"planner-guide",parentId:"folder-planner",name:"Full_Learning_Guide.md",type:Ga.FILE,content:`# WHAT TO DO AT EACH LEVEL
+  - 1. Phase 1: Invitation Template
+  - 2. Phase 2: Immersion Log
+  - 3. Phase 3: Discovery Tools
+  - 4. Phase 4: Collaboration
+  - 5. Phase 5: Creation
+  - 6. Phase 6: Integration Reflection
+  - 7. Phase 7: Spacing Ecosystem
+  - 8. Phase 8: Legacy
+  - 9. Checklist`,createdAt:Date.now()},{id:"planner-guide",parentId:"folder-planner",name:"Full_Learning_Guide.md",type:Ga.FILE,content:`# WHAT TO DO AT EACH LEVEL
 
 ## Separate Guide for Each Grade
 
@@ -1438,13 +1441,13 @@ graph TD
 
 ### Checklist for A+ Level
 
-\`\`\`
-☐ Completed One-Page Summary
-☐ Completed Visual Diagram
-☐ Completed Integrated Quiz (scored 80%+)
-☐ Completed Surface + Strategic Reflection
-☐ Total time: 60 minutes
-\`\`\`
+- ☐ Session Flow Template
+- ☐ Cornell Note Taking Template
+- ☐ Completed One-Page Summary
+- ☐ Completed Visual Diagram
+- ☐ Completed Integrated Quiz (scored 80%+)
+- ☐ Completed Surface + Strategic Reflection
+- ☐ Total time: 60 minutes
 
 ---
 
@@ -1550,14 +1553,13 @@ graph TD
 
 ### Checklist for S Level
 
-\`\`\`
-☐ One-Page Summary transformed into story with character
-☐ Emotional states added to diagram
-☐ "My Connection" column added to study guide
-☐ Quiz converted to real-life scenarios
-☐ Identity Reflection completed
-☐ Total additional time: 70 minutes
-\`\`\`
+
+- ☐ One-Page Summary transformed into story with character
+- ☐ Emotional states added to diagram
+- ☐ "My Connection" column added to study guide
+- ☐ Quiz converted to real-life scenarios
+- ☐ Identity Reflection completed
+- ☐ Total additional time: 70 minutes
 
 ---
 
@@ -1654,17 +1656,15 @@ At S+ Level, your brain is **activating mirror neurons** by teaching AI personas
 
 ### Checklist for S+ Level
 
-\`\`\`
-☐ Created 3 AI personas (The Intuitionist, The Overwhelmed, The Skeptic)
-☐ Taught Method 1 to all 3 personas
-☐ Taught Method 2 to all 3 personas
-☐ Taught Method 3 to all 3 personas
-☐ Taught Method 4 to all 3 personas
-☐ Taught Method 5 to all 3 personas
-☐ Completed Role-Play Reversal for at least 1 persona
-☐ Completed Teaching Reflection
-☐ Total time: 115 minutes (spread across sessions)
-\`\`\`
+- ☐ Created 3 AI personas (The Intuitionist, The Overwhelmed, The Skeptic)
+- ☐ Taught Method 1 to all 3 personas
+- ☐ Taught Method 2 to all 3 personas
+- ☐ Taught Method 3 to all 3 personas
+- ☐ Taught Method 4 to all 3 personas
+- ☐ Taught Method 5 to all 3 personas
+- ☐ Completed Role-Play Reversal for at least 1 persona
+- ☐ Completed Teaching Reflection
+- ☐ Total time: 115 minutes (spread across sessions)
 
 ---
 
@@ -1760,18 +1760,16 @@ Create unexpected prompts that appear in different contexts:
 
 ### Checklist for S++ Level
 
-\`\`\`
-☐ Created spacing schedule for 90 days
-☐ Completed Day 3 review
-☐ Completed Day 7 review
-☐ Completed Day 14 review
-☐ Completed Day 30 review
-☐ Completed Day 60 review
-☐ Completed Day 90 review
-☐ Created variable retrieval prompts
-☐ Tracked forgetting curve
-☐ Total time: 105 minutes (distributed over 90 days)
-\`\`\`
+- ☐ Created spacing schedule for 90 days
+- ☐ Completed Day 3 review
+- ☐ Completed Day 7 review
+- ☐ Completed Day 14 review
+- ☐ Completed Day 30 review
+- ☐ Completed Day 60 review
+- ☐ Completed Day 90 review
+- ☐ Created variable retrieval prompts
+- ☐ Tracked forgetting curve
+- ☐ Total time: 105 minutes (distributed over 90 days)
 
 ---
 
@@ -1909,17 +1907,15 @@ ________________________________________________________________
 
 ### Checklist for S+++ Level
 
-\`\`\`
-☐ Phase 1: Invitation completed
-☐ Phase 2: Immersion (4 weeks of scenarios)
-☐ Phase 3: Discovery (built own tools)
-☐ Phase 4: Collaboration (worked with AI collaborators)
-☐ Phase 5: Creation (created something new)
-☐ Phase 6: Integration (layered reflection completed)
-☐ Phase 7: Spacing Ecosystem established
-☐ Phase 8: Legacy system built
-☐ Total time: 8–10 hours + ongoing
-\`\`\`
+- ☐ Phase 1: Invitation completed
+- ☐ Phase 2: Immersion (4 weeks of scenarios)
+- ☐ Phase 3: Discovery (built own tools)
+- ☐ Phase 4: Collaboration (worked with AI collaborators)
+- ☐ Phase 5: Creation (created something new)
+- ☐ Phase 6: Integration (layered reflection completed)
+- ☐ Phase 7: Spacing Ecosystem established
+- ☐ Phase 8: Legacy system built
+- ☐ Total time: 8–10 hours + ongoing
 
 ---
 
