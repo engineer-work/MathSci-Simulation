@@ -131,6 +131,26 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
     };
   }, [config.questions]);
 
+  // Sync config from props
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(configStr);
+      const newConfig = {
+        title: parsed.title || 'Untitled Quiz',
+        description: parsed.description || '',
+        duration: parsed.duration || 30,
+        questions: parsed.questions || [],
+        internal_block_id: parsed.internal_block_id
+      };
+      // Only update if actually different to avoid loops
+      if (JSON.stringify(newConfig) !== JSON.stringify(config)) {
+        setConfig(newConfig);
+      }
+    } catch (e) {
+      // Ignore invalid JSON
+    }
+  }, [configStr]);
+
   // Timer logic
   useEffect(() => {
     let timer: any;
@@ -196,12 +216,22 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
     handleUpdate({ ...config, questions: config.questions.filter(q => q.id !== id) });
   };
 
-  const updateQuestion = (id: string, updates: Partial<Question>) => {
-    handleUpdate({
-      ...config,
-      questions: config.questions.map(q => q.id === id ? { ...q, ...updates } : q)
+  const updateQuestion = useCallback((id: string, updatesOrUpdater: Partial<Question> | ((q: Question) => Partial<Question>)) => {
+    setConfig(prev => {
+      const next = {
+        ...prev,
+        questions: prev.questions.map(q => {
+          if (q.id === id) {
+            const updates = typeof updatesOrUpdater === 'function' ? updatesOrUpdater(q) : updatesOrUpdater;
+            return { ...q, ...updates };
+          }
+          return q;
+        })
+      };
+      onUpdate(JSON.stringify(next, null, 2));
+      return next;
     });
-  };
+  }, [onUpdate]);
 
   const handleFileUpload = async (questionId: string, file: File, type: MediaItem['type']) => {
     const blobId = uuidv4();
@@ -219,10 +249,9 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
       blobId
     };
 
-    const question = config.questions.find(q => q.id === questionId);
-    if (question) {
-      updateQuestion(questionId, { media: [...(question.media || []), newMedia] });
-    }
+    updateQuestion(questionId, (currQ) => ({
+      media: [...(currQ.media || []), newMedia]
+    }));
   };
 
   const markdownComponents = useMemo(() => ({
@@ -270,7 +299,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
           if (!src && m.type !== 'smiles' && m.type !== 'model') return null;
 
           return (
-            <div key={m.id} className="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
+            <div key={m.id} className="rounded-xl overflow-hidden border border-border-color bg-bg-sidebar shadow-sm">
               {m.type === 'image' && <img src={src} className="w-full h-auto object-contain max-h-[300px]" referrerPolicy="no-referrer" />}
               {m.type === 'video' && <video src={src} controls className="w-full h-auto max-h-[300px]" />}
               {m.type === 'audio' && (
@@ -279,7 +308,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                   <audio src={src} controls className="flex-1" />
                 </div>
               )}
-              {m.type === 'smiles' && <div className="p-4 bg-white"><SmilesDiagram smiles={m.content || ''} /></div>}
+              {m.type === 'smiles' && <div className="p-4 bg-bg-sidebar"><SmilesDiagram smiles={m.content || ''} theme="dark" /></div>}
               {m.type === 'model' && <div className="h-[300px]"><ModelViewerEngine configStr={m.content || '{}'} onUpdate={() => {}} readOnly={true} /></div>}
             </div>
           );
@@ -301,18 +330,18 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                 onClick={() => handleAnswerChange(question.id, opt)}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between group ${
                   userAnswers[question.id] === opt 
-                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md' 
-                    : 'border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50'
-                } ${isExamSubmitted && opt === question.correctAnswer ? 'border-green-500 bg-green-50 shadow-none' : ''}
-                  ${isExamSubmitted && userAnswers[question.id] === opt && opt !== question.correctAnswer ? 'border-red-500 bg-red-50 shadow-none' : ''}`}
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-md' 
+                    : 'border-border-color hover:border-text-muted bg-bg-sidebar hover:bg-hover-bg'
+                } ${isExamSubmitted && opt === question.correctAnswer ? 'border-green-500 bg-green-500/10 shadow-none' : ''}
+                  ${isExamSubmitted && userAnswers[question.id] === opt && opt !== question.correctAnswer ? 'border-red-500 bg-red-500/10 shadow-none' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold ${
-                    userAnswers[question.id] === opt ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-200 text-gray-400 group-hover:border-gray-300'
+                    userAnswers[question.id] === opt ? 'bg-blue-500 border-blue-500 text-white' : 'border-border-color text-text-muted group-hover:border-text-main'
                   }`}>
                     {String.fromCharCode(65 + idx)}
                   </div>
-                  <span className="font-semibold text-gray-800">{opt}</span>
+                  <span className="font-semibold text-text-main">{opt}</span>
                 </div>
                 {isExamSubmitted && opt === question.correctAnswer && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                 {isExamSubmitted && userAnswers[question.id] === opt && opt !== question.correctAnswer && <XCircle className="w-5 h-5 text-red-500" />}
@@ -329,14 +358,14 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
               value={userAnswers[question.id] || ''}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
               placeholder="Type your answer here..."
-              className={`w-full p-4 rounded-xl border-2 outline-none transition-all font-bold text-gray-800 ${
+              className={`w-full p-4 rounded-xl border-2 outline-none transition-all font-bold text-text-main ${
                 isExamSubmitted 
-                  ? (String(userAnswers[question.id]).toLowerCase().trim() === String(question.correctAnswer).toLowerCase().trim() ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50')
-                  : 'border-gray-100 focus:border-blue-500 bg-white'
+                  ? (String(userAnswers[question.id]).toLowerCase().trim() === String(question.correctAnswer).toLowerCase().trim() ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10')
+                  : 'border-border-color focus:border-blue-500 bg-bg-sidebar'
               }`}
             />
             {isExamSubmitted && (
-              <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm text-green-700 flex items-center gap-2">
+              <div className="mt-3 p-3 bg-green-500/10 rounded-lg text-sm text-green-400 flex items-center gap-2 border border-green-500/20">
                 <CheckCircle2 className="w-4 h-4" />
                 Correct answer: <span className="font-bold">{question.correctAnswer}</span>
               </div>
@@ -351,7 +380,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
               value={userAnswers[question.id] || ''}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
               placeholder="Write your detailed response..."
-              className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-blue-500 outline-none h-40 resize-none bg-white font-bold text-gray-800"
+              className="w-full p-4 rounded-xl border-2 border-border-color focus:border-blue-500 outline-none h-40 resize-none bg-bg-sidebar font-bold text-text-main"
             />
           </div>
         );
@@ -367,13 +396,13 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
   // Editor Render
   if (isEditing && !readOnly) {
     return (
-      <div className="my-8 bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden font-sans">
-        <div className="bg-gray-900 p-6 flex items-center justify-between text-white">
+      <div className="my-8 bg-bg-main rounded-2xl border border-border-color shadow-2xl overflow-hidden font-sans">
+        <div className="bg-bg-sidebar p-6 flex items-center justify-between text-text-main border-b border-border-color">
           <div className="flex items-center gap-3">
             <Settings className="w-6 h-6 text-blue-400" />
             <div>
               <h3 className="font-bold text-lg leading-tight">Exam Designer</h3>
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">Configure your structured quiz</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-widest">Configure your structured quiz</p>
             </div>
           </div>
           <button 
@@ -384,37 +413,37 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
           </button>
         </div>
 
-        <div className="p-8 space-y-10 max-h-[800px] overflow-y-auto bg-gray-50/50">
+        <div className="p-8 space-y-10 max-h-[800px] overflow-y-auto bg-bg-main">
           {/* Global Config */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-bg-sidebar p-6 rounded-2xl border border-border-color shadow-sm">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Exam Title</label>
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Exam Title</label>
               <input 
                 type="text" 
                 value={config.title} 
                 onChange={(e) => handleUpdate({ ...config, title: e.target.value })}
-                className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-blue-500 outline-none font-bold text-gray-700 transition-all"
+                className="w-full p-3 border-2 border-border-color bg-bg-main rounded-xl focus:border-blue-500 outline-none font-bold text-text-main transition-all"
                 placeholder="e.g. Mid-Term Physics Exam"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Duration (Minutes)</label>
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Duration (Minutes)</label>
               <div className="relative">
                 <input 
                   type="number" 
                   value={config.duration} 
                   onChange={(e) => handleUpdate({ ...config, duration: parseInt(e.target.value) || 0 })}
-                  className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-blue-500 outline-none font-bold text-gray-700 transition-all pl-10"
+                  className="w-full p-3 border-2 border-border-color bg-bg-main rounded-xl focus:border-blue-500 outline-none font-bold text-text-main transition-all pl-10"
                 />
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               </div>
             </div>
             <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</label>
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Description</label>
               <textarea 
                 value={config.description} 
                 onChange={(e) => handleUpdate({ ...config, description: e.target.value })}
-                className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-blue-500 outline-none text-sm text-gray-600 h-20 resize-none transition-all"
+                className="w-full p-3 border-2 border-border-color bg-bg-main rounded-xl focus:border-blue-500 outline-none text-sm text-text-main h-20 resize-none transition-all"
                 placeholder="Briefly describe the exam objectives..."
               />
             </div>
@@ -423,7 +452,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
           {/* Questions List */}
           <div className="space-y-8">
             <div className="flex items-center justify-between px-2">
-              <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Questions ({config.questions.length})</h4>
+              <h4 className="text-sm font-bold text-text-muted uppercase tracking-widest">Questions ({config.questions.length})</h4>
               <button 
                 onClick={addQuestion}
                 className="text-xs font-bold text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors"
@@ -433,36 +462,36 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
             </div>
 
             {config.questions.map((q, idx) => (
-              <div key={q.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group hover:shadow-md transition-all">
+              <div key={q.id} className="bg-bg-sidebar p-6 rounded-2xl border border-border-color shadow-sm relative group hover:shadow-md transition-all">
                 <button 
                   onClick={() => removeQuestion(q.id)}
-                  className="absolute top-4 right-4 p-2 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                  className="absolute top-4 right-4 p-2 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
 
                 <div className="flex flex-wrap items-center gap-4 mb-6">
-                  <span className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center font-bold text-blue-600">
+                  <span className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center font-bold text-blue-400">
                     {idx + 1}
                   </span>
                   <select 
                     value={q.type}
-                    onChange={(e) => updateQuestion(q.id, { type: e.target.value as QuestionType })}
-                    className="p-2 border-2 border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none bg-white focus:border-blue-500 transition-all"
+                    onChange={(e) => updateQuestion(q.id, () => ({ type: e.target.value as QuestionType }))}
+                    className="p-2 border-2 border-border-color bg-bg-main rounded-xl text-sm font-bold text-text-main outline-none focus:border-blue-500 transition-all"
                   >
                     <option value="multiple-choice">Multiple Choice</option>
                     <option value="matching">Matching</option>
                     <option value="fill-in-the-blanks">Fill in the Blanks</option>
                     <option value="short-answer">Short Answer</option>
                   </select>
-                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-2 bg-bg-main px-3 py-1.5 rounded-xl border border-border-color">
                     <Award className="w-4 h-4 text-yellow-500" />
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Points:</label>
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Points:</label>
                     <input 
                       type="number" 
                       value={q.points} 
-                      onChange={(e) => updateQuestion(q.id, { points: parseInt(e.target.value) || 1 })}
-                      className="w-10 bg-transparent font-bold text-gray-700 text-center outline-none"
+                      onChange={(e) => updateQuestion(q.id, () => ({ points: parseInt(e.target.value) || 1 }))}
+                      className="w-10 bg-transparent font-bold text-text-main text-center outline-none"
                     />
                   </div>
                 </div>
@@ -470,21 +499,21 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Question Text (Markdown)</label>
-                      <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Live Preview Below</span>
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Question Text (Markdown)</label>
+                      <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Live Preview Below</span>
                     </div>
                     <textarea 
                       value={q.question}
-                      onChange={(e) => updateQuestion(q.id, { question: e.target.value })}
+                      onChange={(e) => updateQuestion(q.id, () => ({ question: e.target.value }))}
                       placeholder="Enter question content..."
-                      className="w-full p-4 border-2 border-gray-100 rounded-xl text-sm h-32 resize-none focus:border-blue-500 outline-none transition-all"
+                      className="w-full p-4 border-2 border-border-color bg-bg-main text-text-main rounded-xl text-sm h-32 resize-none focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
 
                   {/* Question Preview in Editor */}
                   {q.question && (
-                    <div className="p-4 bg-blue-50/30 rounded-xl border border-blue-100/50">
-                      <div className="markdown-body-light prose-sm text-gray-800">
+                    <div className="p-4 bg-blue-500/5 rounded-xl border border-blue-500/10">
+                      <div className="markdown-body prose-sm text-text-main">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm, remarkMath]}
                           rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}
@@ -498,9 +527,9 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
 
                   {/* Media Management */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Media Assets</label>
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Media Assets</label>
                     <div className="flex flex-wrap gap-2">
-                      <label className="cursor-pointer px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-all flex items-center gap-2">
+                      <label className="cursor-pointer px-3 py-1.5 bg-bg-main hover:bg-hover-bg rounded-lg text-xs font-bold text-text-muted hover:text-text-main border border-border-color transition-all flex items-center gap-2">
                         <Upload className="w-3 h-3" /> Upload File
                         <input 
                           type="file" 
@@ -517,20 +546,20 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                       <button 
                         onClick={() => {
                           openModal('Add Image URL', 'https://example.com/image.png', (url) => {
-                            updateQuestion(q.id, { media: [...(q.media || []), { id: uuidv4(), type: 'image', url }] });
+                            updateQuestion(q.id, (currQ) => ({ media: [...(currQ.media || []), { id: uuidv4(), type: 'image', url }] }));
                           });
                         }}
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-all flex items-center gap-2"
+                        className="px-3 py-1.5 bg-bg-main hover:bg-hover-bg rounded-lg text-xs font-bold text-text-muted hover:text-text-main border border-border-color transition-all flex items-center gap-2"
                       >
                         <LinkIcon className="w-3 h-3" /> Add URL
                       </button>
                       <button 
                         onClick={() => {
                           openModal('Add SMILES', 'C1=CC=CC=C1', (smiles) => {
-                            updateQuestion(q.id, { media: [...(q.media || []), { id: uuidv4(), type: 'smiles', content: smiles }] });
+                            updateQuestion(q.id, (currQ) => ({ media: [...(currQ.media || []), { id: uuidv4(), type: 'smiles', content: smiles }] }));
                           });
                         }}
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-all flex items-center gap-2"
+                        className="px-3 py-1.5 bg-bg-main hover:bg-hover-bg rounded-lg text-xs font-bold text-text-muted hover:text-text-main border border-border-color transition-all flex items-center gap-2"
                       >
                         <Beaker className="w-3 h-3" /> Add SMILES
                       </button>
@@ -539,13 +568,13 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                     {q.media && q.media.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mt-2">
                         {q.media.map(m => (
-                          <div key={m.id} className="relative group/media aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                          <div key={m.id} className="relative group/media aspect-square bg-bg-main rounded-lg overflow-hidden border border-border-color">
                             {m.type === 'image' && <img src={m.blobId ? blobUrls[m.blobId] : m.url} className="w-full h-full object-cover" />}
-                            {m.type === 'video' && <div className="w-full h-full flex items-center justify-center"><Video className="w-6 h-6 text-gray-400" /></div>}
-                            {m.type === 'audio' && <div className="w-full h-full flex items-center justify-center"><Volume2 className="w-6 h-6 text-gray-400" /></div>}
-                            {m.type === 'smiles' && <div className="w-full h-full flex items-center justify-center"><Beaker className="w-6 h-6 text-gray-400" /></div>}
+                            {m.type === 'video' && <div className="w-full h-full flex items-center justify-center"><Video className="w-6 h-6 text-text-muted" /></div>}
+                            {m.type === 'audio' && <div className="w-full h-full flex items-center justify-center"><Volume2 className="w-6 h-6 text-text-muted" /></div>}
+                            {m.type === 'smiles' && <div className="w-full h-full flex items-center justify-center"><Beaker className="w-6 h-6 text-text-muted" /></div>}
                             <button 
-                              onClick={() => updateQuestion(q.id, { media: q.media?.filter(item => item.id !== m.id) })}
+                              onClick={() => updateQuestion(q.id, (currQ) => ({ media: currQ.media?.filter(item => item.id !== m.id) }))}
                               className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded opacity-0 group-hover/media:opacity-100 transition-opacity"
                             >
                               <X className="w-2 h-2" />
@@ -558,40 +587,44 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
 
                   {/* Type-specific Editor */}
                   {q.type === 'multiple-choice' && (
-                    <div className="space-y-3 pt-4 border-t border-gray-50">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Answer Options</label>
+                    <div className="space-y-3 pt-4 border-t border-border-color">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Answer Options</label>
                       {q.options?.map((opt, oIdx) => (
                         <div key={oIdx} className="flex items-center gap-3">
                           <input 
                             type="radio" 
                             checked={q.correctAnswer === opt}
-                            onChange={() => updateQuestion(q.id, { correctAnswer: opt })}
-                            className="w-4 h-4 text-blue-600"
+                            onChange={() => updateQuestion(q.id, () => ({ correctAnswer: opt }))}
+                            className="w-4 h-4 text-blue-500"
                           />
                           <input 
                             type="text" 
                             value={opt}
                             onChange={(e) => {
-                              const newOpts = [...(q.options || [])];
-                              newOpts[oIdx] = e.target.value;
-                              updateQuestion(q.id, { options: newOpts });
+                              updateQuestion(q.id, (currQ) => {
+                                const newOpts = [...(currQ.options || [])];
+                                newOpts[oIdx] = e.target.value;
+                                return { options: newOpts };
+                              });
                             }}
-                            className="flex-1 p-2 border-2 border-gray-50 rounded-lg text-sm focus:border-blue-500 outline-none transition-all"
+                            className="flex-1 p-2 border-2 border-border-color bg-bg-main text-text-main rounded-lg text-sm focus:border-blue-500 outline-none transition-all"
                           />
                           <button 
                             onClick={() => {
-                              const newOpts = q.options?.filter((_, i) => i !== oIdx);
-                              updateQuestion(q.id, { options: newOpts });
+                              updateQuestion(q.id, (currQ) => {
+                                const newOpts = (currQ.options || []).filter((_, i) => i !== oIdx);
+                                return { options: newOpts };
+                              });
                             }}
-                            className="text-gray-200 hover:text-red-500 transition-colors"
+                            className="text-text-muted hover:text-red-500 transition-colors"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
                       <button 
-                        onClick={() => updateQuestion(q.id, { options: [...(q.options || []), 'New Option'] })}
-                        className="text-xs text-blue-500 font-bold hover:underline flex items-center gap-1"
+                        onClick={() => updateQuestion(q.id, (currQ) => ({ options: [...(currQ.options || []), 'New Option'] }))}
+                        className="text-xs text-blue-400 font-bold hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> Add Option
                       </button>
@@ -599,36 +632,37 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                   )}
 
                   {q.type === 'fill-in-the-blanks' && (
-                    <div className="space-y-2 pt-4 border-t border-gray-50">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Correct Answer</label>
+                    <div className="space-y-2 pt-4 border-t border-border-color">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Correct Answer</label>
                       <input 
                         type="text" 
                         value={q.correctAnswer}
-                        onChange={(e) => updateQuestion(q.id, { correctAnswer: e.target.value })}
-                        className="w-full p-3 border-2 border-gray-50 rounded-xl text-sm focus:border-blue-500 outline-none transition-all"
+                        onChange={(e) => updateQuestion(q.id, () => ({ correctAnswer: e.target.value }))}
+                        className="w-full p-3 border-2 border-border-color bg-bg-main text-text-main rounded-xl text-sm focus:border-blue-500 outline-none transition-all"
                         placeholder="Enter the exact correct answer..."
                       />
                     </div>
                   )}
 
                   {q.type === 'matching' && (
-                    <div className="space-y-3 pt-4 border-t border-gray-50">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Matching Pairs (Markdown Supported)</label>
+                    <div className="space-y-3 pt-4 border-t border-border-color">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Matching Pairs (Markdown Supported)</label>
                       {q.pairs?.map((pair, pIdx) => (
-                        <div key={pair.id} className="flex items-start gap-3 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                        <div key={pair.id} className="flex items-start gap-3 bg-bg-main/50 p-3 rounded-xl border border-border-color">
                           <div className="flex-1 space-y-2">
                             <textarea 
                               value={pair.left}
                               onChange={(e) => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].left = e.target.value;
-                                updateQuestion(q.id, { pairs: newPairs });
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, left: e.target.value } : p);
+                                  return { pairs: newPairs };
+                                });
                               }}
                               placeholder="Left item (Markdown)"
-                              className="w-full p-2 border-2 border-gray-50 rounded-lg text-sm focus:border-blue-500 outline-none transition-all h-20 resize-none font-bold text-gray-800"
+                              className="w-full p-2 border-2 border-border-color bg-bg-sidebar rounded-lg text-sm focus:border-blue-500 outline-none transition-all h-20 resize-none font-bold text-text-main"
                             />
                             {pair.left && (
-                              <div className="p-2 bg-white rounded-lg border border-gray-100 text-xs">
+                              <div className="p-2 bg-bg-sidebar rounded-lg border border-border-color text-xs">
                                 <ReactMarkdown
                                   remarkPlugins={[remarkGfm, remarkMath]}
                                   rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}
@@ -640,38 +674,42 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                             )}
                             <div className="flex gap-1 mt-1">
                               <button onClick={() => openModal('Add Image URL', 'https://example.com/image.png', (url) => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].left += `\n![Image](${url})`;
-                                updateQuestion(q.id, { pairs: newPairs });
-                              })} className="p-1 hover:bg-gray-200 rounded text-gray-400"><ImageIcon className="w-3 h-3" /></button>
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, left: p.left + `\n![Image](${url})` } : p);
+                                  return { pairs: newPairs };
+                                });
+                              })} className="p-1 hover:bg-hover-bg rounded text-text-muted"><ImageIcon className="w-3 h-3" /></button>
                               <button onClick={() => openModal('Add SMILES', 'C1=CC=CC=C1', (smiles) => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].left += `\n\`\`\`smiles\n${smiles}\n\`\`\``;
-                                updateQuestion(q.id, { pairs: newPairs });
-                              })} className="p-1 hover:bg-gray-200 rounded text-gray-400"><Beaker className="w-3 h-3" /></button>
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, left: p.left + `\n\`\`\`smiles\n${smiles}\n\`\`\`` } : p);
+                                  return { pairs: newPairs };
+                                });
+                              })} className="p-1 hover:bg-hover-bg rounded text-text-muted"><Beaker className="w-3 h-3" /></button>
                               <button onClick={() => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].left += `\n$$ e = mc^2 $$`;
-                                updateQuestion(q.id, { pairs: newPairs });
-                              }} className="p-1 hover:bg-gray-200 rounded text-gray-400"><FileText className="w-3 h-3" /></button>
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, left: p.left + `\n$$ e = mc^2 $$` } : p);
+                                  return { pairs: newPairs };
+                                });
+                              }} className="p-1 hover:bg-hover-bg rounded text-text-muted"><FileText className="w-3 h-3" /></button>
                             </div>
                           </div>
                           <div className="flex flex-col items-center justify-center h-20">
-                            <FlipHorizontal className="w-4 h-4 text-gray-300" />
+                            <FlipHorizontal className="w-4 h-4 text-text-muted" />
                           </div>
                           <div className="flex-1 space-y-2">
                             <textarea 
                               value={pair.right}
                               onChange={(e) => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].right = e.target.value;
-                                updateQuestion(q.id, { pairs: newPairs });
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, right: e.target.value } : p);
+                                  return { pairs: newPairs };
+                                });
                               }}
                               placeholder="Right item (Markdown)"
-                              className="w-full p-2 border-2 border-gray-100 rounded-lg text-sm focus:border-blue-500 outline-none transition-all h-20 resize-none font-bold text-gray-800"
+                              className="w-full p-2 border-2 border-border-color bg-bg-sidebar rounded-lg text-sm focus:border-blue-500 outline-none transition-all h-20 resize-none font-bold text-text-main"
                             />
                             {pair.right && (
-                              <div className="p-2 bg-white rounded-lg border border-gray-100 text-xs">
+                              <div className="p-2 bg-bg-sidebar rounded-lg border border-border-color text-xs">
                                 <ReactMarkdown
                                   remarkPlugins={[remarkGfm, remarkMath]}
                                   rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}
@@ -683,36 +721,41 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                             )}
                             <div className="flex gap-1 mt-1">
                               <button onClick={() => openModal('Add Image URL', 'https://example.com/image.png', (url) => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].right += `\n![Image](${url})`;
-                                updateQuestion(q.id, { pairs: newPairs });
-                              })} className="p-1 hover:bg-gray-200 rounded text-gray-400"><ImageIcon className="w-3 h-3" /></button>
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, right: p.right + `\n![Image](${url})` } : p);
+                                  return { pairs: newPairs };
+                                });
+                              })} className="p-1 hover:bg-hover-bg rounded text-text-muted"><ImageIcon className="w-3 h-3" /></button>
                               <button onClick={() => openModal('Add SMILES', 'C1=CC=CC=C1', (smiles) => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].right += `\n\`\`\`smiles\n${smiles}\n\`\`\``;
-                                updateQuestion(q.id, { pairs: newPairs });
-                              })} className="p-1 hover:bg-gray-200 rounded text-gray-400"><Beaker className="w-3 h-3" /></button>
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, right: p.right + `\n\`\`\`smiles\n${smiles}\n\`\`\`` } : p);
+                                  return { pairs: newPairs };
+                                });
+                              })} className="p-1 hover:bg-hover-bg rounded text-text-muted"><Beaker className="w-3 h-3" /></button>
                               <button onClick={() => {
-                                const newPairs = [...(q.pairs || [])];
-                                newPairs[pIdx].right += `\n$$ e = mc^2 $$`;
-                                updateQuestion(q.id, { pairs: newPairs });
-                              }} className="p-1 hover:bg-gray-200 rounded text-gray-400"><FileText className="w-3 h-3" /></button>
+                                updateQuestion(q.id, (currQ) => {
+                                  const newPairs = (currQ.pairs || []).map((p, i) => i === pIdx ? { ...p, right: p.right + `\n$$ e = mc^2 $$` } : p);
+                                  return { pairs: newPairs };
+                                });
+                              }} className="p-1 hover:bg-hover-bg rounded text-text-muted"><FileText className="w-3 h-3" /></button>
                             </div>
                           </div>
                           <button 
                             onClick={() => {
-                              const newPairs = q.pairs?.filter((_, i) => i !== pIdx);
-                              updateQuestion(q.id, { pairs: newPairs });
+                              updateQuestion(q.id, (currQ) => {
+                                const newPairs = (currQ.pairs || []).filter((_, i) => i !== pIdx);
+                                return { pairs: newPairs };
+                              });
                             }}
-                            className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                            className="p-2 text-text-muted hover:text-red-500 transition-colors"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
                       <button 
-                        onClick={() => updateQuestion(q.id, { pairs: [...(q.pairs || []), { id: uuidv4(), left: '', right: '' }] })}
-                        className="text-xs text-blue-500 font-bold hover:underline flex items-center gap-1"
+                        onClick={() => updateQuestion(q.id, (currQ) => ({ pairs: [...(currQ.pairs || []), { id: uuidv4(), left: '', right: '' }] }))}
+                        className="text-xs text-blue-400 font-bold hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> Add Pair
                       </button>
@@ -724,7 +767,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
             
             <button 
               onClick={addQuestion}
-              className="w-full py-8 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50/30 transition-all flex flex-col items-center gap-2"
+              className="w-full py-8 border-2 border-dashed border-border-color rounded-2xl text-text-muted hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all flex flex-col items-center gap-2"
             >
               <Plus className="w-8 h-8" />
               <span className="text-sm font-bold uppercase tracking-widest">Append New Question</span>
@@ -741,10 +784,10 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
     return (
       <div className="my-8 flex flex-col items-center gap-8 font-sans">
         <div className="flex items-center justify-between w-full max-w-xl px-4">
-          <button onClick={() => setIsFlashcardMode(false)} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 transition-all">Exit Flashcards</button>
+          <button onClick={() => setIsFlashcardMode(false)} className="px-4 py-2 bg-bg-sidebar text-text-muted rounded-xl text-xs font-bold uppercase hover:bg-hover-bg transition-all border border-border-color">Exit Flashcards</button>
           <div className="flex flex-col items-end">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</span>
-            <span className="text-sm font-bold text-gray-800">{currentQuestionIndex + 1} / {config.questions.length}</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Progress</span>
+            <span className="text-sm font-bold text-text-main">{currentQuestionIndex + 1} / {config.questions.length}</span>
           </div>
         </div>
 
@@ -758,12 +801,12 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
           >
             {/* Front */}
-            <div className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col items-center justify-center p-10 text-center">
+            <div className="absolute inset-0 backface-hidden bg-bg-sidebar rounded-3xl shadow-2xl border border-border-color flex flex-col items-center justify-center p-10 text-center">
               <div className="absolute top-6 left-6 flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Question</span>
               </div>
-              <div className="markdown-body-light prose-lg w-full max-h-full overflow-y-auto">
+              <div className="markdown-body prose-lg w-full max-h-full overflow-y-auto text-text-main">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}
@@ -772,7 +815,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                   {q?.question || ''}
                 </ReactMarkdown>
               </div>
-              <div className="absolute bottom-6 flex items-center gap-2 text-[10px] text-gray-300 font-bold uppercase tracking-widest">
+              <div className="absolute bottom-6 flex items-center gap-2 text-[10px] text-text-muted font-bold uppercase tracking-widest">
                 <RotateCcw className="w-3 h-3" /> Click to flip
               </div>
             </div>
@@ -804,16 +847,16 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
           <button 
             disabled={currentQuestionIndex === 0}
             onClick={(e) => { e.stopPropagation(); setCurrentQuestionIndex(prev => prev - 1); setIsFlipped(false); }}
-            className="p-4 bg-white rounded-2xl shadow-xl disabled:opacity-30 hover:scale-110 transition-all border border-gray-100"
+            className="p-4 bg-bg-sidebar rounded-2xl shadow-xl disabled:opacity-30 hover:scale-110 transition-all border border-border-color"
           >
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
+            <ChevronLeft className="w-6 h-6 text-text-main" />
           </button>
           <button 
             disabled={currentQuestionIndex === config.questions.length - 1}
             onClick={(e) => { e.stopPropagation(); setCurrentQuestionIndex(prev => prev + 1); setIsFlipped(false); }}
-            className="p-4 bg-white rounded-2xl shadow-xl disabled:opacity-30 hover:scale-110 transition-all border border-gray-100"
+            className="p-4 bg-bg-sidebar rounded-2xl shadow-xl disabled:opacity-30 hover:scale-110 transition-all border border-border-color"
           >
-            <ChevronRight className="w-6 h-6 text-gray-600" />
+            <ChevronRight className="w-6 h-6 text-text-main" />
           </button>
         </div>
       </div>
@@ -824,22 +867,22 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
   if (isExamStarted) {
     const q = config.questions[currentQuestionIndex];
     return (
-      <div className="my-8 bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden font-sans">
+      <div className="my-8 bg-bg-sidebar rounded-3xl border border-border-color shadow-2xl overflow-hidden font-sans">
         {/* Header */}
-        <div className="bg-gray-900 px-8 py-6 flex items-center justify-between text-white">
+        <div className="bg-bg-main px-8 py-6 flex items-center justify-between text-text-main">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <FileText className="w-6 h-6 text-blue-400" />
             </div>
             <div className="flex flex-col">
               <h2 className="text-xl font-bold leading-tight">{config.title}</h2>
-              <span className="text-[10px] text-white/40 uppercase tracking-widest">Question {currentQuestionIndex + 1} of {config.questions.length}</span>
+              <span className="text-[10px] text-text-muted uppercase tracking-widest">Question {currentQuestionIndex + 1} of {config.questions.length}</span>
             </div>
           </div>
           <div className="flex items-center gap-8">
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Time Remaining</span>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl border border-white/10">
+              <span className="text-[10px] text-text-muted uppercase tracking-widest mb-1">Time Remaining</span>
+              <div className="flex items-center gap-2 bg-bg-sidebar px-4 py-2 rounded-xl border border-border-color">
                 <Timer className={`w-4 h-4 ${timeLeft < 60 ? 'text-red-400 animate-pulse' : 'text-blue-400'}`} />
                 <span className={`font-mono text-lg font-bold ${timeLeft < 60 ? 'text-red-400' : ''}`}>{formatTime(timeLeft)}</span>
               </div>
@@ -856,7 +899,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
         </div>
 
         {/* Progress Bar */}
-        <div className="h-2 bg-gray-100 w-full">
+        <div className="h-2 bg-bg-main w-full">
           <motion.div 
             className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
             initial={{ width: 0 }}
@@ -865,34 +908,34 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
         </div>
 
         {/* Question Area */}
-        <div className="p-10 min-h-[500px] bg-gray-50/30">
+        <div className="p-10 min-h-[500px] bg-bg-main/30">
           {isExamSubmitted ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center max-w-2xl mx-auto">
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-28 h-28 bg-blue-50 rounded-3xl flex items-center justify-center mb-8 shadow-inner"
+                className="w-28 h-28 bg-blue-500/10 rounded-3xl flex items-center justify-center mb-8 shadow-inner"
               >
                 <Award className="w-14 h-14 text-blue-500" />
               </motion.div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-3">Results Summary</h2>
-              <p className="text-gray-500 mb-10 text-lg">Congratulations! You have successfully completed the <strong>{config.title}</strong>.</p>
+              <h2 className="text-4xl font-bold text-text-main mb-3">Results Summary</h2>
+              <p className="text-text-muted mb-10 text-lg">Congratulations! You have successfully completed the <strong>{config.title}</strong>.</p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full mb-12">
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Total Score</span>
-                  <span className="text-4xl font-bold text-blue-600">{calculateScore()} <span className="text-lg text-gray-300">/ {totalPoints}</span></span>
+                <div className="bg-bg-sidebar p-6 rounded-3xl border border-border-color shadow-sm flex flex-col items-center">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Total Score</span>
+                  <span className="text-4xl font-bold text-blue-500">{calculateScore()} <span className="text-lg text-text-muted">/ {totalPoints}</span></span>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Accuracy</span>
-                  <span className="text-4xl font-bold text-blue-600">{Math.round((calculateScore() / totalPoints) * 100)}%</span>
+                <div className="bg-bg-sidebar p-6 rounded-3xl border border-border-color shadow-sm flex flex-col items-center">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Accuracy</span>
+                  <span className="text-4xl font-bold text-blue-500">{Math.round((calculateScore() / totalPoints) * 100)}%</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <button 
                   onClick={resetExam}
-                  className="px-8 py-3 bg-white text-gray-600 border border-gray-200 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-sm"
+                  className="px-8 py-3 bg-bg-sidebar text-text-main border border-border-color rounded-xl font-bold hover:bg-hover-bg transition-all shadow-sm"
                 >
                   Retake Exam
                 </button>
@@ -907,11 +950,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
           ) : (
             <div className="max-w-4xl mx-auto">
               <div className="flex items-start gap-6 mb-10">
-                <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 shadow-lg shadow-blue-200">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 shadow-lg shadow-blue-900/20">
                   {currentQuestionIndex + 1}
                 </div>
                 <div className="flex-1">
-                  <div className="markdown-body-light prose-xl text-gray-800 mb-8">
+                  <div className="markdown-body prose-xl text-text-main mb-8">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}
@@ -931,11 +974,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
 
         {/* Footer Navigation */}
         {!isExamSubmitted && (
-          <div className="bg-white px-10 py-6 border-t border-gray-100 flex items-center justify-between">
+          <div className="bg-bg-sidebar px-10 py-6 border-t border-border-color flex items-center justify-between">
             <button 
               disabled={currentQuestionIndex === 0}
               onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-text-muted hover:text-text-main hover:bg-hover-bg disabled:opacity-30 transition-all"
             >
               <ChevronLeft className="w-5 h-5" /> Previous
             </button>
@@ -945,7 +988,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                 <button
                   key={idx}
                   onClick={() => setCurrentQuestionIndex(idx)}
-                  className={`w-3 h-3 rounded-full transition-all ${idx === currentQuestionIndex ? 'bg-blue-500 scale-125' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`w-3 h-3 rounded-full transition-all ${idx === currentQuestionIndex ? 'bg-blue-500 scale-125' : 'bg-border-color hover:bg-text-muted'}`}
                 />
               ))}
             </div>
@@ -953,7 +996,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
             <button 
               disabled={currentQuestionIndex === config.questions.length - 1}
               onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 disabled:opacity-30 transition-all"
+              className="flex items-center gap-2 px-6 py-2 bg-blue-500/10 text-blue-400 rounded-xl font-bold hover:bg-blue-500/20 disabled:opacity-30 transition-all border border-blue-500/20"
             >
               Next Question <ChevronRight className="w-5 h-5" />
             </button>
@@ -965,49 +1008,49 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
 
   // Start Screen
   return (
-    <div className="my-8 bg-white rounded-3xl border border-gray-200 shadow-2xl overflow-hidden font-sans group">
+    <div className="my-8 bg-bg-sidebar rounded-3xl border border-border-color shadow-2xl overflow-hidden font-sans group">
       <div className="h-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600" />
       
       <div className="p-12 flex flex-col items-center text-center">
         <motion.div 
           whileHover={{ rotate: 15, scale: 1.1 }}
-          className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-8 shadow-inner"
+          className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center mb-8 shadow-inner"
         >
           <HelpCircle className="w-10 h-10 text-blue-500" />
         </motion.div>
         
-        <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">{config.title}</h1>
-        <p className="text-gray-500 max-w-xl mb-12 text-lg leading-relaxed">{config.description || 'Challenge yourself with this comprehensive interactive assessment. Ensure you are in a quiet environment before starting.'}</p>
+        <h1 className="text-4xl font-bold text-text-main mb-4 tracking-tight">{config.title}</h1>
+        <p className="text-text-muted max-w-xl mb-12 text-lg leading-relaxed">{config.description || 'Challenge yourself with this comprehensive interactive assessment. Ensure you are in a quiet environment before starting.'}</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 w-full max-w-2xl mb-14">
-          <div className="flex flex-col items-center p-4 rounded-2xl bg-gray-50 border border-gray-100">
+          <div className="flex flex-col items-center p-4 rounded-2xl bg-bg-main border border-border-color">
             <Layout className="w-6 h-6 text-blue-400 mb-3" />
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Questions</span>
-            <span className="text-2xl font-bold text-gray-800">{config.questions.length}</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Total Questions</span>
+            <span className="text-2xl font-bold text-text-main">{config.questions.length}</span>
           </div>
-          <div className="flex flex-col items-center p-4 rounded-2xl bg-gray-50 border border-gray-100">
+          <div className="flex flex-col items-center p-4 rounded-2xl bg-bg-main border border-border-color">
             <Clock className="w-6 h-6 text-indigo-400 mb-3" />
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Time Limit</span>
-            <span className="text-2xl font-bold text-gray-800">{config.duration}m</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Time Limit</span>
+            <span className="text-2xl font-bold text-text-main">{config.duration}m</span>
           </div>
-          <div className="flex flex-col items-center p-4 rounded-2xl bg-gray-50 border border-gray-100">
+          <div className="flex flex-col items-center p-4 rounded-2xl bg-bg-main border border-border-color">
             <Award className="w-6 h-6 text-purple-400 mb-3" />
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Points</span>
-            <span className="text-2xl font-bold text-gray-800">{totalPoints}</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Total Points</span>
+            <span className="text-2xl font-bold text-text-main">{totalPoints}</span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-5">
           <button 
             onClick={startExam}
-            className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-3"
+            className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-900/20 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-3"
           >
             <Play className="w-6 h-6" /> Start Exam Now
           </button>
           
           <button 
             onClick={() => setIsFlashcardMode(true)}
-            className="px-10 py-4 bg-white text-gray-600 border-2 border-gray-100 rounded-2xl font-bold hover:bg-gray-50 hover:border-gray-200 transition-all flex items-center gap-3"
+            className="px-10 py-4 bg-bg-sidebar text-text-main border-2 border-border-color rounded-2xl font-bold hover:bg-hover-bg hover:border-text-muted transition-all flex items-center gap-3"
           >
             <RotateCcw className="w-6 h-6" /> Study Flashcards
           </button>
@@ -1015,7 +1058,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
           {!readOnly && (
             <button 
               onClick={() => setIsEditing(true)}
-              className="px-10 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all flex items-center gap-3"
+              className="px-10 py-4 bg-bg-main text-text-main rounded-2xl font-bold hover:bg-hover-bg transition-all flex items-center gap-3 border border-border-color"
             >
               <Edit3 className="w-6 h-6" /> Edit Quiz
             </button>
@@ -1023,7 +1066,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
         </div>
       </div>
 
-      <div className="bg-gray-50 px-12 py-6 border-t border-gray-100 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+      <div className="bg-bg-main px-12 py-6 border-t border-border-color flex items-center justify-between text-[10px] font-bold text-text-muted uppercase tracking-widest">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full" />
           <span>Exam Engine v2.5 Ready</span>
@@ -1043,11 +1086,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-bg-sidebar rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-border-color"
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-900 text-white">
+              <div className="p-6 border-b border-border-color flex items-center justify-between bg-bg-main text-text-main">
                 <h3 className="font-bold">{modal.title}</h3>
-                <button onClick={closeModal} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                <button onClick={closeModal} className="p-1 hover:bg-hover-bg rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1064,12 +1107,12 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                     }
                   }}
                   placeholder={modal.placeholder}
-                  className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-blue-500 outline-none font-medium text-gray-800"
+                  className="w-full p-3 border-2 border-border-color bg-bg-main rounded-xl focus:border-blue-500 outline-none font-medium text-text-main"
                 />
                 <div className="flex justify-end gap-3">
                   <button 
                     onClick={closeModal}
-                    className="px-4 py-2 text-gray-500 font-bold hover:bg-gray-50 rounded-lg transition-colors"
+                    className="px-4 py-2 text-text-muted font-bold hover:bg-hover-bg rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
@@ -1078,7 +1121,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({ configStr, onUpdate, rea
                       modal.onConfirm(modal.value);
                       closeModal();
                     }}
-                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-900/20"
                   >
                     Confirm
                   </button>
@@ -1191,7 +1234,7 @@ const MatchingInterface: React.FC<MatchingInterfaceProps> = ({ question, answer,
 
       <div className="grid grid-cols-2 gap-24 relative" style={{ zIndex: 20 }}>
         <div className="space-y-4">
-          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-2">Column A</h4>
+          <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 px-2">Column A</h4>
           {question.pairs?.map(pair => (
             <div 
               key={pair.id}
@@ -1199,10 +1242,10 @@ const MatchingInterface: React.FC<MatchingInterfaceProps> = ({ question, answer,
               data-id={pair.id}
               onClick={() => handleLeftClick(pair.id)}
               className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative ${
-                selectedLeft === pair.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-100 bg-white hover:border-gray-200'
+                selectedLeft === pair.id ? 'border-blue-500 bg-blue-500/10 shadow-md' : 'border-border-color bg-bg-sidebar hover:border-text-muted'
               } ${answer[pair.id] ? 'border-opacity-50' : ''}`}
             >
-              <div className="markdown-body-light text-sm font-bold text-gray-800">
+              <div className="markdown-body text-sm font-bold text-text-main">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}
@@ -1214,7 +1257,7 @@ const MatchingInterface: React.FC<MatchingInterfaceProps> = ({ question, answer,
               {answer[pair.id] && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); clearMatch(pair.id); }}
-                  className="absolute -top-2 -right-2 w-5 h-5 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-bg-main text-text-muted rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border border-border-color"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -1224,7 +1267,7 @@ const MatchingInterface: React.FC<MatchingInterfaceProps> = ({ question, answer,
         </div>
 
         <div className="space-y-4">
-          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-2">Column B</h4>
+          <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 px-2">Column B</h4>
           {question.pairs?.map(pair => pair.right).sort().map((val, idx) => {
             const isMatched = Object.values(answer).includes(val);
             return (
@@ -1234,10 +1277,10 @@ const MatchingInterface: React.FC<MatchingInterfaceProps> = ({ question, answer,
                 data-val={val}
                 onClick={() => handleRightClick(val)}
                 className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  isMatched ? 'border-gray-200 bg-gray-50 text-gray-400' : 'border-gray-100 bg-white hover:border-gray-200'
-                } ${selectedLeft && !isMatched ? 'hover:border-blue-300 hover:bg-blue-50/30' : ''}`}
+                  isMatched ? 'border-border-color bg-bg-main text-text-muted' : 'border-border-color bg-bg-sidebar hover:border-text-muted'
+                } ${selectedLeft && !isMatched ? 'hover:border-blue-300 hover:bg-blue-500/10' : ''}`}
               >
-                <div className="markdown-body-light text-sm font-bold text-gray-800">
+                <div className="markdown-body text-sm font-bold text-text-main">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeRaw, [rehypeKatex, { trust: true, strict: false }], rehypeHighlight]}

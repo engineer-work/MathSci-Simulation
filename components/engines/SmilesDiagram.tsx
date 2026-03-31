@@ -2,7 +2,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Box, RotateCw, AlertCircle, Maximize2 } from 'lucide-react';
 
-export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
+export const SmilesDiagram = ({ smiles, theme = 'dark' }: { smiles: string, theme?: 'dark' | 'light' }) => {
+  const canvasId = useRef(`smiles-canvas-${Math.random().toString(36).substr(2, 9)}`);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const container3dRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,9 +18,15 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
     const render2D = () => {
       if (!isMounted) return;
       
-      const SmilesDrawer = (window as any).SmilesDrawer || (window as any).SmiDrawer;
-      if (!SmilesDrawer) {
-        setTimeout(render2D, 100);
+      // Try to find the constructor in various possible global locations
+      const SmiDrawer = (window as any).SmiDrawer || 
+                        ((window as any).SmilesDrawer && (window as any).SmilesDrawer.SmiDrawer) ||
+                        ((window as any).SmilesDrawer && (window as any).SmilesDrawer.Drawer) ||
+                        (window as any).SmilesDrawer;
+
+      if (!SmiDrawer || typeof SmiDrawer !== 'function') {
+        // If not found yet, retry a few times
+        setTimeout(render2D, 200);
         return;
       }
 
@@ -29,23 +36,29 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
         bondThickness: 1.5,
         terminalCarbons: true,
         explicitHydrogens: false,
-        compactDrawing: true
+        compactDrawing: true,
+        padding: 10
       };
       
       try {
-          // In version 2.x, SmiDrawer might be the main export or a property
-          const SmiDrawer = SmilesDrawer.SmiDrawer || SmilesDrawer.Drawer || SmilesDrawer;
-          if (typeof SmiDrawer !== 'function') {
-              throw new Error("SmilesDrawer constructor not found");
-          }
-          
           const drawer = new SmiDrawer(options);
           
-          // Determine theme based on background
-          const theme = 'dark';
+          // Use the theme prop
+          const activeTheme = theme;
           
           if (canvasRef.current) {
-            drawer.draw(smiles.trim(), canvasRef.current, theme);
+            const context = canvasRef.current.getContext('2d');
+            if (context) {
+              context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            }
+            
+            // Pass the canvas ID selector to avoid querySelectorAll errors with element objects
+            if (drawer.draw) {
+              drawer.draw(smiles.trim(), `#${canvasId.current}`, activeTheme);
+            } else if ((SmiDrawer as any).draw) {
+              (SmiDrawer as any).draw(smiles.trim(), `#${canvasId.current}`, activeTheme);
+            }
+            
             setError(null);
           }
       } catch (e) {
@@ -56,7 +69,7 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
 
     render2D();
     return () => { isMounted = false; };
-  }, [smiles, view3D]);
+  }, [smiles, view3D, theme]);
 
   // 3D Rendering
   useEffect(() => {
@@ -91,7 +104,7 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
             if (container3dRef.current && isMounted) {
                 container3dRef.current.innerHTML = '';
                 const viewer = $3Dmol.createViewer(container3dRef.current, { 
-                    backgroundColor: '#111827', 
+                    backgroundColor: '#0f172a', 
                 });
                 viewer.addModel(sdf, "sdf");
                 viewer.setStyle({}, { stick: { radius: 0.2 }, sphere: { radius: 0.5 } });
@@ -143,15 +156,16 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
 
       {/* Error State */}
       {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-bg-sidebar/90 z-30 p-6 text-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-bg-sidebar/95 z-30 p-6 text-center backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3 max-w-xs">
-                  <AlertCircle className="text-red-500 w-8 h-8" />
-                  <p className="text-sm font-medium text-text-main">{error}</p>
+                  <AlertCircle className="text-red-500 w-10 h-10" />
+                  <p className="text-sm font-bold text-text-main">{error}</p>
+                  <p className="text-[10px] text-text-muted mb-2">The SMILES string might be complex or invalid for 2D rendering.</p>
                   <button 
                     onClick={() => { setError(null); setView3D(false); }}
-                    className="mt-2 px-4 py-1.5 bg-bg-main border border-border-color rounded-lg text-xs font-bold hover:bg-hover-bg cursor-pointer"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-lg shadow-blue-900/20 transition-all"
                   >
-                      Try 2D View
+                      Try Again
                   </button>
               </div>
           </div>
@@ -168,7 +182,7 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
       )}
 
       {/* Content Area */}
-      <div className="flex justify-center items-center h-[400px] p-4">
+      <div className={`flex justify-center items-center h-[400px] p-4 ${theme === 'dark' ? 'bg-[#0f172a]/30' : 'bg-white'}`}>
         {view3D ? (
           <div
             ref={container3dRef}
@@ -176,17 +190,20 @@ export const SmilesDiagram = ({ smiles }: { smiles: string }) => {
           />
         ) : (
           <canvas
+            id={canvasId.current}
             ref={canvasRef}
             className="max-w-full h-auto block"
+            width={600}
+            height={400}
             style={{ width: '600px', height: '400px' }}
           />
         )}
       </div>
       
       {/* Footer Info */}
-      <div className="px-4 py-2 bg-bg-main/50 border-t border-border-color flex justify-between items-center">
-          <code className="text-[10px] text-text-muted truncate max-w-[70%] font-mono">{smiles}</code>
-          <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+      <div className="px-4 py-3 bg-bg-main/80 border-t border-border-color flex justify-between items-center backdrop-blur-md">
+          <code className="text-[11px] text-text-main font-bold truncate max-w-[75%] font-mono bg-white/5 px-2 py-1 rounded border border-white/5">{smiles}</code>
+          <div className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">
               {view3D ? 'Interactive 3D' : 'Static 2D'}
           </div>
       </div>

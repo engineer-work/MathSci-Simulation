@@ -18,6 +18,7 @@ import { ImageAnnotationEngine } from './engines/ImageAnnotationEngine';
 import { MediaBlock } from './engines/MediaBlock';
 import { InvestigationBoard } from './engines/InvestigationBoard';
 import { QuizEngine } from './engines/QuizEngine';
+import { ChemicalBalancer } from './engines/ChemicalBalancer';
 import { CodeEditorEngine } from './engines/CodeEditorEngine';
 import { EditorToolbar } from './editor/EditorToolbar';
 import { FileNode } from '../types';
@@ -453,6 +454,7 @@ export const Editor: React.FC<EditorProps> = ({
                 />
               );
             }
+            case 'chemical-reaction': return <ChemicalBalancer configStr={rawCodeContent} />;
             case 'physics': return <PhysicsSimulation configStr={rawCodeContent} />;
           }
         }
